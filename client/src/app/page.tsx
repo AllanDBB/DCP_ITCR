@@ -8,7 +8,7 @@ import SectionHeader from "@/app/components/header";
 
 export default function Home() {
   return (
-    <div className="min-h-screen pt-16">
+    <div className="min-h-screen bg-gray-50 pt-16">
       {/* Hero Section */}
       <section className="px-4 sm:px-6 md:px-8 py-16 bg-white border-t border-gray-100">
         <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -239,7 +239,7 @@ export default function Home() {
         title="¿Listo para descubrir los Change Points en tus datos?"
         description="Comienza a utilizar nuestra plataforma hoy mismo y descubre patrones ocultos en tus series temporales"
         buttonText="Comenzar ahora"
-        buttonLink="/signin"
+        buttonLink="/iniciar-sesion"
       />
       
       {/* Footer */}
