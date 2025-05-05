@@ -28,7 +28,7 @@ export default function ProfilePage() {
   
   // Estado para la foto de perfil
   const [profileImage, setProfileImage] = useState("/default-avatar.png");
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [, setIsUploadingImage] = useState(false);
   
   // Referencia al input de archivo para la foto de perfil
   const fileInputRef = useRef<HTMLInputElement>(null);

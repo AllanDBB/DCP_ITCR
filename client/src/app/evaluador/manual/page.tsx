@@ -1,14 +1,28 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import ManualEvaluationHeader from "./components/ManualEvaluationHeader";
-import ChangePointMarker from "./components/ChangePointMarker";
 import GraphPagination from "./components/GraphPagination";
+
+// Define an interface for your dataset structure
+interface Dataset {
+  id: number;
+  name: string;
+  points: number;
+  status: "pendiente" | "en_progreso" | "completado";
+}
+
+// Define an interface for change points
+interface ChangePoint {
+  index: number;
+  date?: string;
+  value: number;
+  relativeIndex?: number;
+}
 
 export default function ManualEvaluationPage() {
   // Estado para los datasets disponibles
-  const [datasets, setDatasets] = useState([
+  const [datasets, setDatasets] = useState<Dataset[]>([
     { id: 1, name: "Temperatura global (1950-2020)", points: 840, status: "pendiente" },
     { id: 2, name: "Mercado financiero 2021", points: 365, status: "completado" },
     { id: 3, name: "Consumo energético", points: 720, status: "en_progreso" },
@@ -17,10 +31,10 @@ export default function ManualEvaluationPage() {
   ]);
   
   // Dataset actual seleccionado
-  const [currentDataset, setCurrentDataset] = useState(null);
+  const [currentDataset, setCurrentDataset] = useState<Dataset | null>(null);
   
   // Estado para los change points marcados manualmente
-  const [changePoints, setChangePoints] = useState([]);
+  const [changePoints, setChangePoints] = useState<ChangePoint[]>([]);
   
   // Estado para la paginación de la gráfica
   const [currentPage, setCurrentPage] = useState(1);
@@ -28,9 +42,9 @@ export default function ManualEvaluationPage() {
   const [totalPages, setTotalPages] = useState(1);
   
   // Datos simulados para la gráfica
-  const [graphData, setGraphData] = useState([]);
+  const [graphData, setGraphData] = useState<{index: number; value: number; date: string}[]>([]);
   
-  const graphRef = useRef(null);
+  const graphRef = useRef<HTMLDivElement>(null);
   
   // Generar datos simulados al cargar un dataset
   useEffect(() => {
@@ -43,8 +57,8 @@ export default function ManualEvaluationPage() {
   }, [currentDataset, pointsPerPage]);
   
   // Generar datos simulados
-  const generateMockData = (points) => {
-    let data = [];
+  const generateMockData = (points: number) => {
+    const data = [];
     let value = 50 + Math.random() * 20;
     
     for (let i = 0; i < points; i++) {
@@ -68,7 +82,7 @@ export default function ManualEvaluationPage() {
   };
 
   // Manejar el evento de clic en la gráfica para marcar un CP
-  const handleGraphClick = (event) => {
+  const handleGraphClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!graphRef.current || !currentDataset) return;
     
     const rect = graphRef.current.getBoundingClientRect();
@@ -346,7 +360,7 @@ export default function ManualEvaluationPage() {
                         // Actualizar el estado del dataset
                         const updatedDatasets = datasets.map(ds => 
                           ds.id === currentDataset.id 
-                            ? {...ds, status: "completado"} 
+                            ? {...ds, status: "completado" as "pendiente" | "en_progreso" | "completado"} 
                             : ds
                         );
                         setDatasets(updatedDatasets);

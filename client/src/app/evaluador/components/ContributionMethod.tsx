@@ -1,29 +1,31 @@
-import { ReactNode } from "react";
+import React from "react";
 
 interface ContributionMethodProps {
   title: string;
   description: string;
-  icon: ReactNode;
   bgColorClass: string;
   iconColorClass: string;
+  icon: React.ReactNode;
 }
 
 export default function ContributionMethod({
   title,
   description,
-  icon,
   bgColorClass,
-  iconColorClass
+  iconColorClass,
+  icon
 }: ContributionMethodProps) {
   return (
-    <div className="flex flex-col items-center text-center">
-      <div className={`h-16 w-16 rounded-full ${bgColorClass} flex items-center justify-center mb-3`}>
-        {icon}
+    <div className={`p-4 rounded-xl ${bgColorClass}`}>
+      <div className="flex items-start">
+        <div className={`mr-3 ${iconColorClass}`}>
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-sm font-medium text-gray-800">{title}</h3>
+          <p className="mt-1 text-xs text-gray-600">{description}</p>
+        </div>
       </div>
-      <h4 className="font-medium text-gray-700 mb-1">{title}</h4>
-      <p className="text-sm text-gray-600">
-        {description}
-      </p>
     </div>
   );
 }

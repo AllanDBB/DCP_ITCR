@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Button from '@/components/primaryButton';
+import Image from 'next/image';
 
 interface NavLinkProps {
   href: string;
@@ -108,10 +109,11 @@ const Navbar = () => {
                   <span className="text-gray-700 text-sm font-medium hidden lg:block">{userInfo.name.split(' ')[0]}</span>
                   <div className="h-7 w-7 rounded-full bg-blue-100 border border-gray-200 overflow-hidden flex items-center justify-center">
                     {userInfo.avatar ? (
-                      <img
+                      <Image
                         src={userInfo.avatar}
                         alt="Avatar"
-                        className="h-full w-full object-cover"
+                        width={28}
+                        height={28}
                       />
                     ) : (
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -238,7 +240,7 @@ const Navbar = () => {
                 </Link>
                 <div className="pt-1.5 pb-1">
                   <Button 
-                    variant="danger"
+                    variant="primary"
                     size="sm"
                     className="w-full"
                     onClick={() => {

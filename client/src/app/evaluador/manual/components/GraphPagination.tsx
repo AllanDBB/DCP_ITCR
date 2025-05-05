@@ -1,9 +1,16 @@
-export default function GraphPagination({ currentPage, totalPages, onPageChange }) {
-    const goToPage = (page) => {
-      if (page >= 1 && page <= totalPages) {
-        onPageChange(page);
-      }
-    };
+
+interface GraphPaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
+
+export default function GraphPagination({ currentPage, totalPages, onPageChange }: GraphPaginationProps) {
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      onPageChange(page);
+    }
+  };
   
     return (
       <div className="flex items-center space-x-1">
