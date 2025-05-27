@@ -15,7 +15,6 @@ interface DatasetUploadProps {
 export default function DatasetUpload({ onUpload }: DatasetUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Datasets de ejemplo
@@ -309,9 +308,8 @@ export default function DatasetUpload({ onUpload }: DatasetUploadProps) {
                       <span>Serie temporal</span>
                     </div>
                   </div>
-                  
-                  <div className="ml-4">
-                    {uploading && selectedDataset === dataset.id ? (
+                    <div className="ml-4">
+                    {uploading ? (
                       <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                     ) : (
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

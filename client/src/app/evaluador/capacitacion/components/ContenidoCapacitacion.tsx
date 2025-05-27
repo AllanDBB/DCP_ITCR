@@ -87,13 +87,12 @@ const ejemplosSeries: EjemploSerie[] = [
     })),
     changePoints: [45]
   },
-
   // Change Point en Periodicidad
   {
     id: 54,
     nombre: "Serie 54 - Change Point en Periodicidad",
     tipo: 'periodicidad',
-    descripción: "Cambio en los patrones repetitivos de la serie.",
+    descripcion: "Cambio en los patrones repetitivos de la serie.",
     explicacion: "La serie presenta un patrón periódico regular en la primera mitad, pero este patrón cambia (en frecuencia o amplitud) alrededor del punto 50. El cambio en periodicidad puede manifestarse como cambios en la frecuencia de oscilación o en la amplitud de los ciclos.",
     datos: Array.from({length: 100}, (_, i) => ({
       x: i,
@@ -223,13 +222,12 @@ export default function ContenidoCapacitacion({ onCompletado }: ContenidoCapacit
             />
           );
         })}
-        
-        {/* Marcar change points con escala aplicada */}
-        {serie.changePoints?.map((cp, index) => {
+          {/* Marcar change points con escala aplicada */}
+        {serie.changePoints?.map((cp, cpIndex) => {
           const scaledY = (serie.datos[cp].y - centroY) * escalaY + centroY + offsetY;
-          const y = Math.max(30, Math.min(270, 270 - ((scaledY - minY) / rangoY) * 240));
+          // const y = Math.max(30, Math.min(270, 270 - ((scaledY - minY) / rangoY) * 240));
           return (
-            <g key={index}>
+            <g key={cpIndex}>
               <line
                 x1={60 + (cp / 100) * 680}
                 y1={30}
@@ -356,11 +354,9 @@ export default function ContenidoCapacitacion({ onCompletado }: ContenidoCapacit
                     Estas series no presentan change points. Es importante distinguir entre outliers y change points.
                   </p>
                 )}
-              </div>
-
-              {/* Ejemplos de la sección */}
-              {ejemplosSeccionActual.map((serie, index) => (
-                <div key={serie.id} className="border rounded-lg p-6 bg-gray-50">                  <h4 className="text-xl font-semibold text-gray-800 mb-2">
+              </div>              {/* Ejemplos de la sección */}
+              {ejemplosSeccionActual.map((serie) => (
+                <div key={serie.id} className="border rounded-lg p-6 bg-gray-50"><h4 className="text-xl font-semibold text-gray-800 mb-2">
                     {serie.nombre}
                   </h4>
                   <p className="text-gray-600 mb-4">{serie.descripcion}</p>
