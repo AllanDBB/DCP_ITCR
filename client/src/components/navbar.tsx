@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Button from '@/components/primaryButton';
 import Image from 'next/image';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavLinkProps {
   href: string;
@@ -33,16 +34,20 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   
-  // Simular estado de autenticación (en una app real, esto vendría de un contexto o hook de autenticación)
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    typeof window !== 'undefined' ? localStorage.getItem('isLoggedIn') === 'true' : false
-  );
+  const { user, isAuthenticated, logout } = useAuth();
   
-  // Simulación de información del usuario
-  const userInfo = {
-    name: "Ana Rodríguez",
-    email: "ana.rodriguez@estudiantes.itcr.ac.cr",
-    avatar: "/default-avatar.png" // Usa la misma ruta que en la página de perfil
+  // Debug logs
+  console.log('Navbar - user:', user);
+  console.log('Navbar - isAuthenticated:', isAuthenticated);
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setIsUserMenuOpen(false);
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
   };
 
   return (
@@ -79,10 +84,9 @@ const Navbar = () => {
             <NavLink href="/evaluador">Evaluador</NavLink>
             <NavLink href="/herramientas">Herramientas</NavLink>
           </div>
-          
-          {/* Right section: Auth Button or User Menu */}
+            {/* Right section: Auth Button or User Menu */}
           <div className="hidden md:block">
-            {!isLoggedIn ? (
+            {!isAuthenticated ? (
               <div className="flex items-center space-x-2">
                 <Button 
                   href="/iniciar-sesion"
@@ -106,29 +110,21 @@ const Navbar = () => {
                   className="flex items-center gap-2 text-sm rounded-full focus:outline-none"
                   aria-expanded={isUserMenuOpen ? 'true' : 'false'}
                 >
-                  <span className="text-gray-700 text-sm font-medium hidden lg:block">{userInfo.name.split(' ')[0]}</span>
+                  <span className="text-gray-700 text-sm font-medium hidden lg:block">{user?.username}</span>
                   <div className="h-7 w-7 rounded-full bg-blue-100 border border-gray-200 overflow-hidden flex items-center justify-center">
-                    {userInfo.avatar ? (
-                      <Image
-                        src={userInfo.avatar}
-                        alt="Avatar"
-                        width={28}
-                        height={28}
-                      />
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    )}
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
                   </div>
                 </button>
                 
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 border border-gray-100 z-10">
                     <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-700 truncate">{userInfo.name}</p>
-                      <p className="text-xs text-gray-500 truncate">{userInfo.email}</p>
-                    </div>                    <Link
+                      <p className="text-sm font-medium text-gray-700 truncate">{user?.username}</p>
+                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                    </div>
+                    <Link
                       href="/perfil"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
                       onClick={() => setIsUserMenuOpen(false)}
@@ -137,12 +133,7 @@ const Navbar = () => {
                     </Link>
                     <button
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                      onClick={() => {
-                        localStorage.removeItem('isLoggedIn');
-                        setIsLoggedIn(false);
-                        setIsUserMenuOpen(false);
-                        // En una app real, aquí iría la lógica de cerrar sesión
-                      }}
+                      onClick={handleLogout}
                     >
                       Cerrar sesión
                     </button>
@@ -224,9 +215,9 @@ const Navbar = () => {
               className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
               onClick={() => setIsOpen(false)}
             >
-              Herramientas
-            </Link>
-              {isLoggedIn && (
+              Herramientas            </Link>
+            
+            {isAuthenticated && (
               <>
                 <Link
                   href="/perfil"
@@ -240,12 +231,7 @@ const Navbar = () => {
                     variant="primary"
                     size="sm"
                     className="w-full"
-                    onClick={() => {
-                      localStorage.removeItem('isLoggedIn');
-                      setIsLoggedIn(false);
-                      setIsOpen(false);
-                      // En una app real, aquí iría la lógica de cerrar sesión
-                    }}
+                    onClick={handleLogout}
                   >
                     Cerrar sesión
                   </Button>
@@ -253,11 +239,11 @@ const Navbar = () => {
               </>
             )}
             
-            {!isLoggedIn && (
+            {!isAuthenticated && (
               <>
                 <div className="pt-1.5">
                   <Button 
-                    href="/signin"
+                    href="/iniciar-sesion"
                     variant="outline"
                     size="sm"
                     className="w-full"
@@ -268,7 +254,7 @@ const Navbar = () => {
                 </div>
                 <div className="pt-1.5 pb-1">
                   <Button 
-                    href="/signup"
+                    href="/registro"
                     variant="secondary"
                     size="sm"
                     className="w-full"
