@@ -71,13 +71,13 @@ const Navbar = () => {
               <span className="ml-1.5 text-sm font-bold text-gray-800">DCP-ITCR</span>
             </Link>
           </div>
-          
-          {/* Middle section: Navigation */}
+            {/* Middle section: Navigation */}
           <div className="hidden md:flex md:space-x-3 mx-4">
             <NavLink href="/">Inicio</NavLink>
             <NavLink href="/sobre-proyecto">Sobre proyecto</NavLink>
             <NavLink href="/equipo">Equipo</NavLink>
             <NavLink href="/evaluador">Evaluador</NavLink>
+            <NavLink href="/herramientas">Herramientas</NavLink>
           </div>
           
           {/* Right section: Auth Button or User Menu */}
@@ -128,20 +128,12 @@ const Navbar = () => {
                     <div className="px-4 py-2 border-b border-gray-100">
                       <p className="text-sm font-medium text-gray-700 truncate">{userInfo.name}</p>
                       <p className="text-xs text-gray-500 truncate">{userInfo.email}</p>
-                    </div>
-                    <Link
+                    </div>                    <Link
                       href="/perfil"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
                       onClick={() => setIsUserMenuOpen(false)}
                     >
                       Mi perfil
-                    </Link>
-                    <Link
-                      href="/evaluador"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      Evaluador
                     </Link>
                     <button
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
@@ -213,24 +205,29 @@ const Navbar = () => {
               onClick={() => setIsOpen(false)}
             >
               Sobre proyecto
-            </Link>
-            <Link
+            </Link>            <Link
               href="/equipo"
               className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
               onClick={() => setIsOpen(false)}
             >
               Equipo
             </Link>
-            
-            {isLoggedIn && (
+            <Link
+              href="/evaluador"
+              className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+              onClick={() => setIsOpen(false)}
+            >
+              Evaluador
+            </Link>
+            <Link
+              href="/herramientas"
+              className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+              onClick={() => setIsOpen(false)}
+            >
+              Herramientas
+            </Link>
+              {isLoggedIn && (
               <>
-                <Link
-                  href="/evaluador"
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Evaluador
-                </Link>
                 <Link
                   href="/perfil"
                   className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"

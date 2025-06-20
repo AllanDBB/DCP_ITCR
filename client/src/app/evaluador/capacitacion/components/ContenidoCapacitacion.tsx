@@ -74,33 +74,6 @@ const ejemplosSeries: EjemploSerie[] = [
     changePoints: [40]
   },
 
-  // Change Point en Varianza
-  {
-    id: 43,
-    nombre: "Serie 43 - Change Point en Varianza",
-    tipo: 'varianza',
-    descripcion: "Cambio en la dispersión o volatilidad de los datos.",
-    explicacion: "La serie mantiene un nivel promedio similar a lo largo del tiempo, pero la variabilidad (dispersión) de los datos cambia significativamente alrededor del punto 45. La primera parte tiene baja variabilidad, mientras que la segunda parte es mucho más volátil.",
-    datos: Array.from({length: 100}, (_, i) => ({
-      x: i,
-      y: i < 45 ? 15 + Math.random() * 1 : 15 + Math.random() * 6
-    })),
-    changePoints: [45]
-  },
-  // Change Point en Periodicidad
-  {
-    id: 54,
-    nombre: "Serie 54 - Change Point en Periodicidad",
-    tipo: 'periodicidad',
-    descripcion: "Cambio en los patrones repetitivos de la serie.",
-    explicacion: "La serie presenta un patrón periódico regular en la primera mitad, pero este patrón cambia (en frecuencia o amplitud) alrededor del punto 50. El cambio en periodicidad puede manifestarse como cambios en la frecuencia de oscilación o en la amplitud de los ciclos.",
-    datos: Array.from({length: 100}, (_, i) => ({
-      x: i,
-      y: i < 50 ? 15 + 3 * Math.sin(i / 8) + Math.random() * 1 :
-          15 + 2 * Math.sin(i / 4) + Math.random() * 1
-    })),
-    changePoints: [50]
-  },
 
   // Series sin Change Point
   {

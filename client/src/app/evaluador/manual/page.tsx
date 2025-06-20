@@ -18,17 +18,16 @@ interface ChangePoint {
   date?: string;
   value: number;
   relativeIndex?: number;
-  tipo?: 'media' | 'tendencia' | 'varianza' | 'periodicidad';
+  tipo?: 'media' | 'tendencia';
 }
 
-export default function ManualEvaluationPage() {
-  // Estado para los datasets disponibles
+export default function ManualEvaluationPage() {  // Estado para los datasets disponibles
   const [datasets, setDatasets] = useState<Dataset[]>([
-    { id: 1, name: "Temperatura global (1950-2020)", points: 840, status: "pendiente" },
-    { id: 2, name: "Mercado financiero 2021", points: 365, status: "completado" },
-    { id: 3, name: "Consumo energético", points: 720, status: "en_progreso" },
-    { id: 4, name: "Tráfico web diario", points: 450, status: "pendiente" },
-    { id: 5, name: "Señales biomédicas paciente A", points: 1200, status: "pendiente" },
+    { id: 1, name: "Serie 1", points: 840, status: "pendiente" },
+    { id: 2, name: "Serie 2", points: 365, status: "completado" },
+    { id: 3, name: "Serie 3", points: 720, status: "en_progreso" },
+    { id: 4, name: "Serie 4", points: 450, status: "pendiente" },
+    { id: 5, name: "Serie 5", points: 1200, status: "pendiente" },
   ]);
   
   // Dataset actual seleccionado
@@ -126,9 +125,8 @@ export default function ManualEvaluationPage() {
         setEditingChangePoint(clickedIndex);
       }
     }
-  };
-  // Agregar change point con tipo específico
-  const addChangePointWithType = (tipo: 'media' | 'tendencia' | 'varianza' | 'periodicidad') => {
+  };  // Agregar change point con tipo específico
+  const addChangePointWithType = (tipo: 'media' | 'tendencia') => {
     if (editingChangePoint === null) return;
     
     // Encontrar el valor correcto del punto
@@ -180,13 +178,13 @@ export default function ManualEvaluationPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {!currentDataset ? (
           <div className="bg-white p-6 rounded-xl shadow-sm">
-            <h2 className="text-xl font-medium text-gray-700 mb-6">Seleccione un dataset para evaluar</h2>
+            <h2 className="text-xl font-medium text-gray-700 mb-6">Series Temporales Disponibles para Etiquetar</h2>
             
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dataset</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serie</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Puntos</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -214,12 +212,11 @@ export default function ManualEvaluationPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">                        <button
                           onClick={() => setCurrentDataset(dataset)}
                           className="text-blue-500 hover:text-blue-700"
                         >
-                          Evaluar
+                          Etiquetar
                         </button>
                       </td>
                     </tr>
@@ -228,22 +225,20 @@ export default function ManualEvaluationPage() {
               </table>
             </div>
           </div>        ) : (
-          <div className="space-y-6">
-            {/* Instrucciones principales */}
+          <div className="space-y-6">            {/* Instrucciones principales */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-blue-800 mb-3">
-                Instrucciones para la Evaluación
+                Instrucciones para el Etiquetado
               </h3>
               <p className="text-blue-700 mb-4">
-                Por favor, marque el punto o los puntos en la serie temporal donde ocurre un cambio abrupto 
-                en el comportamiento de la serie. El objetivo es definir segmentos de la serie temporal que 
-                están separados por lugares donde ocurren estos cambios abruptos. Recuerde que también es 
-                posible que no haya change points.
+                Analiza cuidadosamente la serie temporal y marca los puntos donde observes un cambio significativo 
+                en el comportamiento. Aplica los conocimientos adquiridos durante la capacitación para identificar 
+                change points en la media o tendencia. Si no detectas ningún change point, marca la casilla correspondiente.
               </p>
               <div className="bg-blue-100 rounded-lg p-4">
                 <p className="text-blue-800 font-medium text-sm">
-                  💡 <strong>Consejo:</strong> Haga clic directamente en la gráfica para marcar un change point. 
-                  Se le pedirá que especifique el tipo de change point detectado.
+                  💡 <strong>Recuerda:</strong> Haz clic directamente en la gráfica donde veas el cambio. 
+                  Se te pedirá que especifiques si es un change point en la media o en la tendencia.
                 </p>
               </div>
             </div>
@@ -251,9 +246,8 @@ export default function ManualEvaluationPage() {
             <div className="bg-white p-6 rounded-xl shadow-sm">
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <h2 className="text-xl font-medium text-gray-700">{currentDataset.name}</h2>
-                  <p className="text-sm text-gray-500">
-                    Analice la serie temporal y marque los change points identificados
+                  <h2 className="text-xl font-medium text-gray-700">{currentDataset.name}</h2>                  <p className="text-sm text-gray-500">
+                    Marca los change points que detectes en esta serie temporal
                   </p>
                 </div>
                 <button
@@ -380,18 +374,12 @@ export default function ManualEvaluationPage() {
                         <div className="flex items-center space-x-3">
                           <span className="text-sm font-medium text-gray-700">
                             Punto {cp.index}
-                          </span>
-                          {cp.tipo && (
+                          </span>                          {cp.tipo && (
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               cp.tipo === 'media' ? 'bg-blue-100 text-blue-800' :
-                              cp.tipo === 'tendencia' ? 'bg-purple-100 text-purple-800' :
-                              cp.tipo === 'varianza' ? 'bg-orange-100 text-orange-800' :
-                              'bg-pink-100 text-pink-800'
+                              'bg-purple-100 text-purple-800'
                             }`}>
-                              {cp.tipo === 'media' ? 'Media' :
-                               cp.tipo === 'tendencia' ? 'Tendencia' :
-                               cp.tipo === 'varianza' ? 'Varianza' :
-                               'Periodicidad'}
+                              {cp.tipo === 'media' ? 'Media' : 'Tendencia'}
                             </span>
                           )}
                         </div>
@@ -544,12 +532,9 @@ export default function ManualEvaluationPage() {
                       const baseValue = cp.value;
                       const scaledValue = (baseValue - 50) * escalaY + 50 + offsetY;
                       const y = Math.max(40, Math.min(300, 300 - (scaledValue / 100) * 260));
-                      
-                      const tipoColors = {
+                        const tipoColors = {
                         media: { fill: '#EF4444', stroke: '#DC2626', bg: '#FEE2E2' },
-                        tendencia: { fill: '#8B5CF6', stroke: '#7C3AED', bg: '#F3E8FF' },
-                        varianza: { fill: '#F59E0B', stroke: '#D97706', bg: '#FEF3C7' },
-                        periodicidad: { fill: '#EC4899', stroke: '#DB2777', bg: '#FCE7F3' }
+                        tendencia: { fill: '#8B5CF6', stroke: '#7C3AED', bg: '#F3E8FF' }
                       };
                       
                       const colors = tipoColors[cp.tipo || 'media'];
@@ -726,8 +711,7 @@ export default function ManualEvaluationPage() {
               <p className="text-gray-700 mb-4 text-sm leading-relaxed">
                 Seleccione el tipo que mejor describe el cambio observado:
               </p>
-              
-              <div className="space-y-3">
+                <div className="space-y-3">
                 <button
                   onClick={() => addChangePointWithType('media')}
                   className="group w-full text-left p-3 rounded-lg border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 hover:shadow-sm"
@@ -753,36 +737,6 @@ export default function ManualEvaluationPage() {
                       <div className="font-semibold text-purple-800 text-sm mb-0.5">Change Point en Tendencia</div>
                       <div className="text-xs text-purple-600 leading-relaxed">
                         Cambio en la dirección o pendiente
-                      </div>
-                    </div>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => addChangePointWithType('varianza')}
-                  className="group w-full text-left p-3 rounded-lg border-2 border-orange-200 hover:border-orange-400 hover:bg-orange-50 transition-all duration-200 hover:shadow-sm"
-                >
-                  <div className="flex items-start space-x-2">
-                    <div className="w-2.5 h-2.5 bg-orange-500 rounded-full mt-1 group-hover:scale-110 transition-transform"></div>
-                    <div>
-                      <div className="font-semibold text-orange-800 text-sm mb-0.5">Change Point en Varianza</div>
-                      <div className="text-xs text-orange-600 leading-relaxed">
-                        Cambio en la dispersión o volatilidad
-                      </div>
-                    </div>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => addChangePointWithType('periodicidad')}
-                  className="group w-full text-left p-3 rounded-lg border-2 border-pink-200 hover:border-pink-400 hover:bg-pink-50 transition-all duration-200 hover:shadow-sm"
-                >
-                  <div className="flex items-start space-x-2">
-                    <div className="w-2.5 h-2.5 bg-pink-500 rounded-full mt-1 group-hover:scale-110 transition-transform"></div>
-                    <div>
-                      <div className="font-semibold text-pink-800 text-sm mb-0.5">Change Point en Periodicidad</div>
-                      <div className="text-xs text-pink-600 leading-relaxed">
-                        Cambio en patrones repetitivos
                       </div>
                     </div>
                   </div>

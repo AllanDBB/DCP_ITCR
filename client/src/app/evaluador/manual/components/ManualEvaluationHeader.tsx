@@ -12,19 +12,19 @@ export default function ManualEvaluationHeader() {
               </svg>
               Volver al inicio
             </Link>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-600 mt-2">Evaluación Manual de Change Points</h1>
-            <p className="text-gray-600 mt-1">Ayuda a entrenar nuestros algoritmos marcando los puntos de cambio que detectes</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-600 mt-2">Etiquetado de Series Temporales</h1>
+            <p className="text-gray-600 mt-1">Contribuye al dataset etiquetando change points en las series asignadas</p>
           </div>
           
           <div className="flex items-center space-x-3">
             <div className="text-sm text-gray-600">
-              <span className="font-medium">Usuario:</span> Estudiante_123
+              <span className="font-medium">Sesión:</span> Usuario_Anónimo
             </div>
             <Link 
               href="/evaluador" 
               className="text-blue-500 bg-white border border-blue-200 hover:bg-blue-50 px-3 py-1 rounded-md text-sm"
             >
-              Volver al evaluador
+              Volver al inicio
             </Link>
           </div>
         </div>

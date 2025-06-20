@@ -98,13 +98,11 @@ export default function EjercicioPreliminar({ onCompletado, onContinuar, complet
       setSinChangePoint(true);
       setPuntoSeleccionado(null);
     }
-  };
-
-  const verificarRespuesta = () => {
+  };  const verificarRespuesta = () => {
     const esCorrecta = sinChangePoint 
       ? serie.changePointCorrecto === undefined
       : puntoSeleccionado !== null && serie.changePointCorrecto !== undefined &&
-        Math.abs(puntoSeleccionado - serie.changePointCorrecto) <= 5;
+        Math.abs(puntoSeleccionado - serie.changePointCorrecto) <= 1;
 
     if (esCorrecta) {
       setRespuestaCorrecta(true);

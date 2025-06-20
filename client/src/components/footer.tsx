@@ -2,9 +2,8 @@ import Link from 'next/link';
 
 const Footer = () => {
   return (
-    <footer className="bg-white border-t border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid md:grid-cols-4 gap-8">
+    <footer className="bg-white border-t border-gray-100">      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid md:grid-cols-2 gap-8">
           {/* Logo y descripción breve */}
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center">
@@ -71,71 +70,7 @@ const Footer = () => {
                 <Link href="/evaluador" className="text-sm text-gray-500 hover:text-blue-500 transition-colors">
                   Evaluador
                 </Link>
-              </li>
-            </ul>
-          </div>
-          
-          {/* Recursos */}
-          <div className="md:col-span-1">
-            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">
-              Recursos
-            </h3>
-            <ul className="mt-4 space-y-2">
-              <li>
-                <a href="#" className="text-sm text-gray-500 hover:text-blue-500 transition-colors">
-                  Documentación técnica
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-gray-500 hover:text-blue-500 transition-colors">
-                  Publicaciones
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-gray-500 hover:text-blue-500 transition-colors">
-                  Datasets
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-gray-500 hover:text-blue-500 transition-colors">
-                  API
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-gray-500 hover:text-blue-500 transition-colors">
-                  GitHub
-                </a>
-              </li>
-            </ul>
-          </div>
-          
-          {/* Legal */}
-          <div className="md:col-span-1">
-            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">
-              Legal
-            </h3>
-            <ul className="mt-4 space-y-2">
-              <li>
-                <Link href="#" className="text-sm text-gray-500 hover:text-blue-500 transition-colors">
-                  Términos de servicio
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-sm text-gray-500 hover:text-blue-500 transition-colors">
-                  Política de privacidad
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-sm text-gray-500 hover:text-blue-500 transition-colors">
-                  Licencias
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-sm text-gray-500 hover:text-blue-500 transition-colors">
-                  Contacto
-                </Link>
-              </li>
-            </ul>
+              </li>            </ul>
           </div>
         </div>
         
