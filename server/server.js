@@ -39,7 +39,8 @@ mongoose.connect(mongoURI)
   console.log('MongoDB conectado');
 })
 .catch((err) => {
-  console.error('Error de conexión a MongoDB:', err);  process.exit(1);
+  console.error('Error de conexión a MongoDB:', err);
+  process.exit(1);
 });
 
 // Importar rutas

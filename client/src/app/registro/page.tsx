@@ -3,23 +3,26 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function SignUpPage() {
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [university, setUniversity] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   
   const router = useRouter();
-  
-  const handleSubmit = async (e: React.FormEvent) => {
+  const { register } = useAuth();  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validaciones básicas
-    if (!name || !email || !password || !passwordConfirm) {
+    if (!username || !email || !password || !passwordConfirm) {
       setError("Por favor complete todos los campos requeridos");
       return;
     }
@@ -33,23 +36,27 @@ export default function SignUpPage() {
       setError("La contraseña debe tener al menos 6 caracteres");
       return;
     }
+
+    // Validación de contraseña (debe incluir mayúscula, minúscula y número)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+    if (!passwordRegex.test(password)) {
+      setError("La contraseña debe contener al menos una letra minúscula, una mayúscula y un número");
+      return;
+    }
     
     setLoading(true);
     setError("");
     
-    // Aquí iría la lógica real de registro
     try {
-      // Simular una llamada de registro
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await register(username, email, password);
       
-      // Simulamos un registro exitoso
-      localStorage.setItem("isLoggedIn", "true");
-      
-      // Redireccionar al evaluador
+      // Registro exitoso - redirección inmediata
+      console.log('Registro exitoso:', response);
       router.push("/evaluador");
-    } catch (err) {
-      setError("Error al crear la cuenta. Intente nuevamente más tarde.");
-      console.error(err);
+      
+    } catch (err: any) {
+      setError(err.message || "Error al crear la cuenta. Intente nuevamente más tarde.");
+      console.error('Error en registro:', err);
     } finally {
       setLoading(false);
     }
@@ -80,30 +87,29 @@ export default function SignUpPage() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+        <div className="bg-white py-8 px-6 shadow rounded-lg sm:px-10">          <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm">
                 {error}
               </div>
             )}
-            
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Nombre completo <span className="text-red-500">*</span>
+              <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Nombre de usuario <span className="text-red-500">*</span>
               </label>
               <div className="mt-1">
                 <input
-                  id="name"
-                  name="name"
+                  id="username"
+                  name="username"
                   type="text"
-                  autoComplete="name"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  autoComplete="username"                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                  placeholder="Ingrese su nombre de usuario"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">Solo letras, números y guiones bajos</p>
             </div>
 
             <div>
@@ -113,11 +119,11 @@ export default function SignUpPage() {
               <div className="mt-1">
                 <input
                   id="university"
-                  name="university"
-                  type="text"
+                  name="university"                  type="text"
                   value={university}
                   onChange={(e) => setUniversity(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                  placeholder="Nombre de su institución (opcional)"
                 />
               </div>
             </div>
@@ -131,49 +137,80 @@ export default function SignUpPage() {
                   id="email"
                   name="email"
                   type="email"
-                  autoComplete="email"
-                  required
+                  autoComplete="email"                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                  placeholder="correo@ejemplo.com"
                 />
               </div>
-            </div>
-
-            <div>
+            </div>            <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Contraseña <span className="text-red-500">*</span>
               </label>
-              <div className="mt-1">
+              <div className="mt-1 relative">
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                  placeholder="Ingrese su contraseña"
                 />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    </svg>
+                  )}
+                </button>
               </div>
-              <p className="mt-1 text-xs text-gray-500">Mínimo 6 caracteres</p>
+              <p className="mt-1 text-xs text-gray-500">Mínimo 6 caracteres, debe incluir mayúscula, minúscula y número</p>
             </div>
-            
-            <div>
+              <div>
               <label htmlFor="passwordConfirm" className="block text-sm font-medium text-gray-700">
                 Confirmar contraseña <span className="text-red-500">*</span>
               </label>
-              <div className="mt-1">
+              <div className="mt-1 relative">
                 <input
                   id="passwordConfirm"
                   name="passwordConfirm"
-                  type="password"
+                  type={showPasswordConfirm ? "text" : "password"}
                   autoComplete="new-password"
                   required
                   value={passwordConfirm}
                   onChange={(e) => setPasswordConfirm(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                  placeholder="Confirme su contraseña"
                 />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                >
+                  {showPasswordConfirm ? (
+                    <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    </svg>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -190,63 +227,19 @@ export default function SignUpPage() {
               </label>
             </div>
 
-            <div>
-              <button
+            <div>              <button
                 type="submit"
                 disabled={loading}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                className={`w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
                   loading 
                     ? 'bg-blue-300 cursor-not-allowed' 
-                    : 'bg-blue-400 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                    : 'bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                 }`}
               >
+                {loading && <LoadingSpinner size="sm" />}
                 {loading ? 'Creando cuenta...' : 'Crear cuenta'}
-              </button>
-            </div>
+              </button></div>
           </form>
-          
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  O registrarse con
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <div>
-                <button
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  <span className="sr-only">Registrarse con Google</span>
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M22.56 12.25C22.56 11.47 22.49 10.72 22.36 10H12V14.26H17.92C17.66 15.63 16.88 16.79 15.72 17.57V20.34H19.28C21.36 18.42 22.56 15.6 22.56 12.25Z" fill="#4285F4"/>
-                    <path d="M12 23C14.97 23 17.46 22.02 19.28 20.34L15.72 17.57C14.76 18.19 13.52 18.57 12 18.57C9.24 18.57 6.92 16.76 6.1 14.26H2.42V17.13C4.24 20.57 7.89 23 12 23Z" fill="#34A853"/>
-                    <path d="M6.1 14.26C5.88 13.57 5.75 12.84 5.75 12.09C5.75 11.34 5.88 10.61 6.1 9.92V7.05H2.42C1.64 8.57 1.2 10.28 1.2 12.09C1.2 13.9 1.64 15.61 2.42 17.13L6.1 14.26Z" fill="#FBBC05"/>
-                    <path d="M12 5.62C13.59 5.62 15.03 6.15 16.16 7.22L19.29 4.09C17.45 2.41 14.97 1.4 12 1.4C7.89 1.4 4.24 3.83 2.42 7.27L6.1 10.14C6.92 7.64 9.24 5.62 12 5.62Z" fill="#EA4335"/>
-                  </svg>
-                </button>
-              </div>
-
-              <div>
-                <button
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  <span className="sr-only">Registrarse con Microsoft</span>
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M11.4 2H2V11.4H11.4V2Z" fill="#F25022"/>
-                    <path d="M22 2H12.6V11.4H22V2Z" fill="#7FBA00"/>
-                    <path d="M11.4 12.6H2V22H11.4V12.6Z" fill="#00A4EF"/>
-                    <path d="M22 12.6H12.6V22H22V12.6Z" fill="#FFB900"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
