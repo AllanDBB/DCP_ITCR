@@ -1,6 +1,6 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { register, login, getProfile, logout, forgotPassword, resetPassword, updateProfilePhoto, updateProfile, changePassword, deleteAccount, completeTraining } = require('../controllers/authController');
+const { register, login, getProfile, logout, forgotPassword, resetPassword, updateProfile, changePassword, deleteAccount, completeTraining } = require('../controllers/authController');
 const { verifyToken } = require('../middlewares/auth');
 
 const router = express.Router();
@@ -82,13 +82,6 @@ const resetPasswordValidation = [
         .withMessage('La contraseña debe contener al menos una letra minúscula, una mayúscula y un número')
 ];
 
-const updatePhotoValidation = [
-    body('photoUrl')
-        .optional()
-        .isURL()
-        .withMessage('La URL de la foto debe ser válida')
-];
-
 const updateProfileValidation = [
     body('university')
         .optional()
@@ -155,9 +148,6 @@ router.get('/profile', verifyToken, getProfile);
 // PUT /api/auth/profile - Actualizar perfil completo
 router.put('/profile', verifyToken, updateProfileValidation, updateProfile);
 
-// PUT /api/auth/profile/photo - Actualizar foto de perfil
-router.put('/profile/photo', verifyToken, updatePhotoValidation, updateProfilePhoto);
-
 // POST /api/auth/change-password - Cambiar contraseña
 router.post('/change-password', verifyToken, changePasswordValidation, changePassword);
 
@@ -176,9 +166,6 @@ router.post('/reset-password/:token', resetPasswordValidation, resetPassword);
 // POST /api/auth/complete-training - Marcar capacitación como completada
 router.post('/complete-training', verifyToken, completeTraining);
 
-// POST /api/auth/update-profile-photo - Actualizar foto de perfil
-router.post('/update-profile-photo', verifyToken, updatePhotoValidation, updateProfilePhoto);
-
 // GET /api/auth/verify - Verificar si el token es válido
 router.get('/verify', verifyToken, (req, res) => {
     res.status(200).json({
@@ -189,7 +176,6 @@ router.get('/verify', verifyToken, (req, res) => {
             username: req.user.username,
             email: req.user.email,
             role: req.user.role,
-            photoUrl: req.user.photoUrl,
             university: req.user.university,
             bio: req.user.bio,
             phone: req.user.phone,

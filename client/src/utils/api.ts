@@ -31,7 +31,6 @@ interface User {
   username: string;
   email: string;
   role?: string;
-  photoUrl?: string;
   university?: string;
   bio?: string;
   phone?: string;
@@ -210,19 +209,6 @@ class ApiService {
     
     console.log('❌ Error en actualización:', response.message);
     throw new Error(response.message || 'Error al actualizar el perfil');
-  }
-
-  async updateProfilePhoto(photoUrl: string): Promise<any> {
-    const response = await this.request('/auth/profile/photo', {
-      method: 'PUT',
-      body: JSON.stringify({ photoUrl }),
-    });
-    
-    if (response.success && response.user) {
-      return response;
-    }
-    
-    throw new Error(response.message || 'Error al actualizar la foto de perfil');
   }
 
   async changePassword(passwordData: ChangePasswordData): Promise<any> {

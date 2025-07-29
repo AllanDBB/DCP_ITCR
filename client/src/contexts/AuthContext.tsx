@@ -12,7 +12,6 @@ interface AuthContextType {
   register: (username: string, email: string, password: string, university?: string) => Promise<any>;
   logout: () => Promise<void>;
   updateProfile: (profileData: UpdateProfileData) => Promise<any>;
-  updateProfilePhoto: (photoUrl: string) => Promise<any>;
   changePassword: (passwordData: ChangePasswordData) => Promise<any>;
   deleteAccount: (password: string) => Promise<any>;
   completeTraining: () => Promise<any>;
@@ -136,18 +135,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const updateProfilePhoto = async (photoUrl: string) => {
-    try {
-      const response = await apiService.updateProfilePhoto(photoUrl);
-      setUser(response.user);
-      showToast('Foto de perfil actualizada exitosamente! 📸', 'success');
-      return response;
-    } catch (error) {
-      console.error('Error al actualizar foto de perfil:', error);
-      throw error;
-    }
-  };
-
   const changePassword = async (passwordData: ChangePasswordData) => {
     try {
       const response = await apiService.changePassword(passwordData);
@@ -202,7 +189,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     updateProfile,
-    updateProfilePhoto,
     changePassword,
     deleteAccount,
     completeTraining,

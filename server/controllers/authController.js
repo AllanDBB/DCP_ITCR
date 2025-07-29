@@ -77,7 +77,6 @@ const register = async (req, res) => {
             phone: null,
             website: null,
             location: null,
-            photoUrl: null,
             // Capacitación no completada inicialmente
             hasCompletedTraining: false,
             trainingCompletedAt: null
@@ -100,7 +99,6 @@ const register = async (req, res) => {
                 username: newUser.username,
                 email: newUser.email,
                 role: newUser.role,
-                photoUrl: newUser.photoUrl,
                 university: newUser.university,
                 bio: newUser.bio,
                 phone: newUser.phone,
@@ -168,7 +166,6 @@ const login = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                photoUrl: user.photoUrl,
                 university: user.university,
                 bio: user.bio,
                 phone: user.phone,
@@ -207,7 +204,6 @@ const getProfile = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                photoUrl: user.photoUrl,
                 university: user.university,
                 bio: user.bio,
                 phone: user.phone,
@@ -353,65 +349,6 @@ const resetPassword = async (req, res) => {
     }
 };
 
-// Actualizar foto de perfil
-const updateProfilePhoto = async (req, res) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                success: false,
-                message: 'Errores de validación',
-                errors: errors.array()
-            });
-        }
-
-        const { photoUrl } = req.body;
-        const userId = req.user._id;
-
-        // Actualizar la foto del usuario
-        const user = await User.findByIdAndUpdate(
-            userId,
-            { photoUrl },
-            { new: true }
-        ).select('-password');
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'Usuario no encontrado'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: 'Foto de perfil actualizada exitosamente',
-            user: {
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                role: user.role,
-                photoUrl: user.photoUrl,
-                university: user.university,
-                bio: user.bio,
-                phone: user.phone,
-                website: user.website,
-                location: user.location,
-                hasCompletedTraining: user.hasCompletedTraining,
-                trainingCompletedAt: user.trainingCompletedAt,
-                createdAt: user.createdAt,
-                updatedAt: user.updatedAt
-            }
-        });
-
-    } catch (error) {
-        console.error('Error al actualizar foto de perfil:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error interno del servidor'
-        });
-    }
-};
-
 // Actualizar perfil completo
 const updateProfile = async (req, res) => {
     try {
@@ -482,7 +419,6 @@ const updateProfile = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                photoUrl: user.photoUrl,
                 university: user.university,
                 bio: user.bio,
                 phone: user.phone,
@@ -630,7 +566,6 @@ const completeTraining = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                photoUrl: user.photoUrl,
                 university: user.university,
                 bio: user.bio,
                 phone: user.phone,
@@ -659,7 +594,6 @@ module.exports = {
     logout,
     forgotPassword,
     resetPassword,
-    updateProfilePhoto,
     updateProfile,
     changePassword,
     deleteAccount,

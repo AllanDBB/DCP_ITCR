@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function ProfilePage() {
-  const { user, updateProfile, updateProfilePhoto, changePassword, deleteAccount, showToast } = useAuth();
+  const { user, updateProfile, changePassword, deleteAccount, showToast } = useAuth();
   const router = useRouter();
 
   // Estados para los datos del usuario (solo campos simplificados)
@@ -18,7 +17,6 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState("");
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
   
   // Estados para manejar las actualizaciones de campos
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -36,9 +34,6 @@ export default function ProfilePage() {
   // Estados para manejar errores y carga
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  
-  // Referencia al input de archivo para la foto de perfil
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cargar datos del usuario al montar el componente
   useEffect(() => {
@@ -49,7 +44,6 @@ export default function ProfilePage() {
       setPhone(user.phone || "");
       setWebsite(user.website || "");
       setLocation(user.location || "");
-      setPhotoUrl(user.photoUrl || "");
     }
   }, [user]);
 
@@ -60,39 +54,6 @@ export default function ProfilePage() {
     }
   }, [user, router]);
 
-  // Manejar el clic en el botón de cambio de foto
-  const handleImageClick = () => {
-    fileInputRef.current?.click();
-  };
-  
-  // Manejar el cambio de archivo para la foto de perfil
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    
-    if (file) {
-      setLoading(true);
-      setError("");
-      
-      try {
-        // Crear una URL para la vista previa de la imagen
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const imageUrl = reader.result as string;
-          
-          // Aquí normalmente subirías la imagen a un servidor
-          // Por ahora usamos la URL local
-          await updateProfilePhoto(imageUrl);
-          setPhotoUrl(imageUrl);
-        };
-        reader.readAsDataURL(file);
-      } catch (err: any) {
-        setError(err.message || "Error al actualizar la foto de perfil");
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-  
   // Manejar la actualización del perfil
   const handleUpdateProfile = async () => {
     setLoading(true);
@@ -518,43 +479,6 @@ export default function ProfilePage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-6">Información de la Cuenta</h2>
               
-              {/* Foto de perfil */}
-              <div className="flex flex-col items-center mb-6">
-                <div className="relative group cursor-pointer" onClick={handleImageClick}>
-                  <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                    {photoUrl ? (
-                      <Image
-                        src={photoUrl}
-                        alt="Foto de perfil"
-                        width={96}
-                        height={96}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-500 mt-2 text-center">
-                  Haz clic para cambiar tu foto de perfil
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </div>
-
               {/* Información del usuario */}
               <div className="space-y-4">
                 <div>
