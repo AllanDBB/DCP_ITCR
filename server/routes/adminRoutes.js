@@ -20,7 +20,7 @@ const router = express.Router();
 
 // Todas las rutas requieren autenticación y permisos de administrador
 router.use(verifyToken);
-router.use(requireAdmin);
+// router.use(requireAdmin); // Temporalmente comentado para debuggear
 
 // Validaciones para subir dataset desde CSV
 const csvUploadValidation = [

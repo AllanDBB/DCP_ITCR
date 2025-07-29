@@ -106,13 +106,13 @@ export default function EvaluadorPage() {
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-semibold text-gray-800">Evaluación Manual</h3>
-                <p className="text-sm text-blue-600">Etiqueta series temporales</p>
+                <h3 className="text-lg font-semibold text-gray-800">Mis Datasets Asignados</h3>
+                <p className="text-sm text-blue-600">Ver series asignadas</p>
               </div>
             </div>
             
             <p className="text-gray-600 mb-6 text-sm">
-              Una vez completada la capacitación, podrás comenzar a etiquetar series temporales reales para contribuir al dataset de entrenamiento.
+              Accede a las series de tiempo que te han sido asignadas por el administrador para evaluar y etiquetar change points.
             </p>
             
             <div className="space-y-3 mb-6">
@@ -143,10 +143,41 @@ export default function EvaluadorPage() {
             </div>
             
             <Link 
-              href="/evaluador/manual" 
+              href="/evaluador/mis-datasets" 
               className="inline-flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200"
             >
-              Comenzar Etiquetado
+              Comenzar Evaluación
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
+        {/* Datasets Asignados Section */}
+        <div className="mb-12">
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  ¿Tienes datasets asignados?
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Los administradores pueden asignarte datasets específicos para evaluar. 
+                  Revisa si tienes tareas pendientes.
+                </p>
+              </div>
+              <div className="hidden md:block">
+                <svg className="w-16 h-16 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+              </div>
+            </div>
+            <Link 
+              href="/evaluador/mis-datasets" 
+              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors duration-200"
+            >
+              Ver Mis Datasets Asignados
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

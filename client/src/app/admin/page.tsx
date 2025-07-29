@@ -58,6 +58,14 @@ export default function AdminPageSimple() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [selectedDataset, setSelectedDataset] = useState<string>('');
+  
+  // Estados para análisis dinámico del CSV
+  const [csvPreview, setCsvPreview] = useState<{
+    columns: string[];
+    timeSeriesColumns: string[];
+    sampleData: any[];
+  } | null>(null);
+  const [uploadMode, setUploadMode] = useState<'single' | 'multiple'>('multiple');
 
   // Verificar autenticación y permisos
   useEffect(() => {
@@ -119,6 +127,51 @@ export default function AdminPageSimple() {
     }
   };
 
+  // Función para analizar CSV
+  const analyzeCSV = async (file: File) => {
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        throw new Error('El archivo CSV debe tener al menos una fila de datos');
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim());
+      const sampleData = lines.slice(1, 6).map(line => {
+        const values = line.split(',');
+        const row: any = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index]?.trim() || '';
+        });
+        return row;
+      });
+
+      // Detectar columnas de series de tiempo (que empiecen con 's' seguido de números)
+      const timeSeriesColumns = headers.filter(col => 
+        /^s\d+$/i.test(col) && 
+        sampleData.some(row => !isNaN(parseFloat(row[col])))
+      );
+
+      setCsvPreview({
+        columns: headers,
+        timeSeriesColumns,
+        sampleData
+      });
+
+      // Si hay múltiples columnas de series de tiempo, sugerir modo múltiple
+      if (timeSeriesColumns.length > 1) {
+        setUploadMode('multiple');
+      } else {
+        setUploadMode('single');
+      }
+
+    } catch (error) {
+      console.error('Error analizando CSV:', error);
+      setMessage({ type: 'error', text: 'Error al analizar el archivo CSV' });
+    }
+  };
+
   const handleFileUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!csvFile) {
@@ -130,14 +183,27 @@ export default function AdminPageSimple() {
       setLoading(true);
       const formData = new FormData();
       formData.append('csvFile', csvFile);
-      formData.append('name', csvFile.name.replace('.csv', ''));
       formData.append('description', `Dataset cargado desde ${csvFile.name}`);
       formData.append('category', 'uploaded');
       formData.append('difficulty', 'medium');
 
-      await apiService.uploadDatasetFromCSV(formData);
-      setMessage({ type: 'success', text: 'Dataset subido exitosamente' });
+      let result;
+      if (uploadMode === 'multiple' && csvPreview && csvPreview.timeSeriesColumns.length > 1) {
+        // Usar endpoint múltiple
+        result = await apiService.uploadMultipleDatasetsFromCSV(formData);
+        setMessage({ 
+          type: 'success', 
+          text: `${result.datasets?.length || 0} datasets creados exitosamente` 
+        });
+      } else {
+        // Usar endpoint simple
+        formData.append('name', csvFile.name.replace('.csv', ''));
+        result = await apiService.uploadDatasetFromCSV(formData);
+        setMessage({ type: 'success', text: 'Dataset subido exitosamente' });
+      }
+
       setCsvFile(null);
+      setCsvPreview(null);
       if (activeTab === 'datasets') {
         loadDatasets();
       }
@@ -249,17 +315,115 @@ export default function AdminPageSimple() {
                 <input
                   type="file"
                   accept=".csv"
-                  onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setCsvFile(file);
+                    if (file) {
+                      analyzeCSV(file);
+                    } else {
+                      setCsvPreview(null);
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   required
                 />
               </div>
+
+              {/* Preview del CSV */}
+              {csvPreview && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-medium text-gray-900 mb-2">Análisis del archivo:</h3>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-medium">Columnas encontradas:</span> {csvPreview.columns.length}</p>
+                    <p><span className="font-medium">Series de tiempo detectadas:</span> {csvPreview.timeSeriesColumns.length}</p>
+                    {csvPreview.timeSeriesColumns.length > 0 && (
+                      <p><span className="font-medium">Columnas de series:</span> {csvPreview.timeSeriesColumns.join(', ')}</p>
+                    )}
+                  </div>
+
+                  {/* Selector de modo */}
+                  {csvPreview.timeSeriesColumns.length > 1 && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Modo de procesamiento:
+                      </label>
+                      <div className="space-y-2">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            value="multiple"
+                            checked={uploadMode === 'multiple'}
+                            onChange={(e) => setUploadMode(e.target.value as 'multiple')}
+                            className="mr-2"
+                          />
+                          <span className="text-sm">
+                            Crear múltiples datasets (uno por cada serie de tiempo) - Recomendado
+                          </span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            value="single"
+                            checked={uploadMode === 'single'}
+                            onChange={(e) => setUploadMode(e.target.value as 'single')}
+                            className="mr-2"
+                          />
+                          <span className="text-sm">
+                            Crear un solo dataset (solo primera serie de tiempo)
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preview de datos */}
+                  {csvPreview.sampleData.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="font-medium text-gray-900 mb-2">Vista previa (primeras filas):</h4>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-xs border">
+                          <thead>
+                            <tr className="bg-gray-100">
+                              {csvPreview.columns.slice(0, 6).map((col) => (
+                                <th key={col} className="border px-2 py-1 text-left">
+                                  {col}
+                                </th>
+                              ))}
+                              {csvPreview.columns.length > 6 && (
+                                <th className="border px-2 py-1 text-left">...</th>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {csvPreview.sampleData.slice(0, 3).map((row, i) => (
+                              <tr key={i}>
+                                {csvPreview.columns.slice(0, 6).map((col) => (
+                                  <td key={col} className="border px-2 py-1">
+                                    {row[col]}
+                                  </td>
+                                ))}
+                                {csvPreview.columns.length > 6 && (
+                                  <td className="border px-2 py-1">...</td>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={loading || !csvFile}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'Subiendo...' : 'Subir Dataset'}
+                {loading ? 'Procesando...' : 
+                 uploadMode === 'multiple' && csvPreview && csvPreview.timeSeriesColumns.length > 1 
+                   ? `Crear ${csvPreview.timeSeriesColumns.length} Datasets` 
+                   : 'Subir Dataset'}
               </button>
             </form>
           </div>

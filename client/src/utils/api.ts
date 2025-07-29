@@ -356,6 +356,24 @@ class ApiService {
     return data;
   }
 
+  async uploadMultipleDatasetsFromCSV(formData: FormData): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/admin/upload-csv-multiple`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al subir datasets múltiples');
+    }
+
+    return data;
+  }
+
   async getAllDatasets(params?: {
     page?: number;
     limit?: number;
