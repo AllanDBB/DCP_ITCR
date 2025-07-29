@@ -3,6 +3,7 @@ const multer = require('multer');
 const csv = require('csv-parser');
 const fs = require('fs');
 const Dataset = require('../models/dataset');
+const User = require('../models/user');
 
 // Configuración de multer para subir archivos
 const storage = multer.diskStorage({
@@ -321,11 +322,256 @@ const getAdminStats = async (req, res) => {
     }
 };
 
+// Obtener todos los usuarios
+const getAllUsers = async (req, res) => {
+    try {
+        const { page = 1, limit = 10, role } = req.query;
+        
+        // Construir filtros
+        const filters = {};
+        if (role && role !== 'all') {
+            filters.role = role;
+        }
+        
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        
+        const users = await User.find(filters)
+            .select('-password -resetPasswordToken')
+            .populate('assignedDatasets.dataset', 'name description difficulty category')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
+        
+        const total = await User.countDocuments(filters);
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                users,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total,
+                    pages: Math.ceil(total / parseInt(limit))
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+// Asignar dataset a usuario
+const assignDatasetToUser = async (req, res) => {
+    try {
+        const { userId, datasetId } = req.body;
+        
+        if (!userId || !datasetId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Se requieren userId y datasetId'
+            });
+        }
+        
+        // Verificar que el usuario existe
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+        
+        // Verificar que el dataset existe
+        const dataset = await Dataset.findById(datasetId);
+        if (!dataset) {
+            return res.status(404).json({
+                success: false,
+                message: 'Dataset no encontrado'
+            });
+        }
+        
+        // Verificar si ya está asignado
+        const alreadyAssigned = user.assignedDatasets.some(
+            assigned => assigned.dataset.toString() === datasetId
+        );
+        
+        if (alreadyAssigned) {
+            return res.status(400).json({
+                success: false,
+                message: 'El dataset ya está asignado a este usuario'
+            });
+        }
+        
+        // Asignar el dataset
+        user.assignedDatasets.push({
+            dataset: datasetId,
+            assignedAt: new Date(),
+            status: 'pending'
+        });
+        
+        await user.save();
+        
+        // Poblar la información del dataset para la respuesta
+        await user.populate('assignedDatasets.dataset', 'name description difficulty category');
+        
+        res.status(200).json({
+            success: true,
+            message: 'Dataset asignado exitosamente',
+            data: user.assignedDatasets[user.assignedDatasets.length - 1]
+        });
+        
+    } catch (error) {
+        console.error('Error al asignar dataset:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+// Remover asignación de dataset
+const removeDatasetAssignment = async (req, res) => {
+    try {
+        const { userId, datasetId } = req.params;
+        
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+        
+        // Remover la asignación
+        user.assignedDatasets = user.assignedDatasets.filter(
+            assigned => assigned.dataset.toString() !== datasetId
+        );
+        
+        await user.save();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Asignación removida exitosamente'
+        });
+        
+    } catch (error) {
+        console.error('Error al remover asignación:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+// Actualizar rol de usuario
+const updateUserRole = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { role } = req.body;
+        
+        if (!['user', 'admin'].includes(role)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rol inválido. Debe ser "user" o "admin"'
+            });
+        }
+        
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { role },
+            { new: true }
+        ).select('-password -resetPasswordToken');
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            message: 'Rol actualizado exitosamente',
+            data: user
+        });
+        
+    } catch (error) {
+        console.error('Error al actualizar rol:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+// Obtener estadísticas de usuarios
+const getUserStats = async (req, res) => {
+    try {
+        const totalUsers = await User.countDocuments();
+        const adminUsers = await User.countDocuments({ role: 'admin' });
+        const regularUsers = await User.countDocuments({ role: 'user' });
+        
+        // Estadísticas de asignaciones
+        const usersWithAssignments = await User.countDocuments({
+            'assignedDatasets.0': { $exists: true }
+        });
+        
+        const assignmentStats = await User.aggregate([
+            { $unwind: '$assignedDatasets' },
+            {
+                $group: {
+                    _id: '$assignedDatasets.status',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+        
+        const assignmentsByStatus = assignmentStats.reduce((acc, stat) => {
+            acc[stat._id] = stat.count;
+            return acc;
+        }, { pending: 0, in_progress: 0, completed: 0 });
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                totalUsers,
+                usersByRole: {
+                    admin: adminUsers,
+                    user: regularUsers
+                },
+                assignments: {
+                    usersWithAssignments,
+                    totalAssignments: assignmentStats.reduce((sum, stat) => sum + stat.count, 0),
+                    byStatus: assignmentsByStatus
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error al obtener estadísticas de usuarios:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
 module.exports = {
     upload,
     uploadDatasetFromCSV,
     getAllDatasets,
     updateDatasetStatus,
     deleteDataset,
-    getAdminStats
+    getAdminStats,
+    getAllUsers,
+    assignDatasetToUser,
+    removeDatasetAssignment,
+    updateUserRole,
+    getUserStats
 }; 

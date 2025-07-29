@@ -82,7 +82,7 @@ export default function AdminPageSimple() {
         loadUserStats();
       }
     }
-  }, [activeTab, isAuthenticated, user]);
+  }, [activeTab]);
 
   const loadDatasets = async () => {
     try {

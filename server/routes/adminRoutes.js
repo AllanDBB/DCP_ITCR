@@ -6,7 +6,12 @@ const {
     getAllDatasets, 
     updateDatasetStatus, 
     deleteDataset, 
-    getAdminStats 
+    getAdminStats,
+    getAllUsers,
+    assignDatasetToUser,
+    removeDatasetAssignment,
+    updateUserRole,
+    getUserStats
 } = require('../controllers/adminController');
 const { verifyToken } = require('../middlewares/auth');
 const { requireAdmin, requireSuperAdmin } = require('../middlewares/adminAuth');
@@ -78,11 +83,39 @@ const updateDatasetValidation = [
         .withMessage('El número esperado de change points debe ser un entero positivo')
 ];
 
-// Rutas de administración
+// Validaciones para asignar dataset a usuario
+const assignDatasetValidation = [
+    body('userId')
+        .notEmpty()
+        .isMongoId()
+        .withMessage('ID de usuario inválido'),
+    
+    body('datasetId')
+        .notEmpty()
+        .isMongoId()
+        .withMessage('ID de dataset inválido')
+];
+
+// Validaciones para actualizar rol de usuario
+const updateRoleValidation = [
+    body('role')
+        .notEmpty()
+        .isIn(['user', 'admin'])
+        .withMessage('El rol debe ser "user" o "admin"')
+];
+
+// Rutas de administración - Datasets
 router.post('/upload-csv', upload.single('csvFile'), csvUploadValidation, uploadDatasetFromCSV);
 router.get('/datasets', getAllDatasets);
 router.get('/stats', getAdminStats);
 router.put('/datasets/:id', updateDatasetValidation, updateDatasetStatus);
+
+// Rutas de administración - Usuarios
+router.get('/users', getAllUsers);
+router.get('/users/stats', getUserStats);
+router.post('/users/assign', assignDatasetValidation, assignDatasetToUser);
+router.delete('/users/:userId/assignments/:datasetId', removeDatasetAssignment);
+router.put('/users/:userId/role', updateRoleValidation, updateUserRole);
 
 // Rutas que requieren superadmin
 router.delete('/datasets/:id', requireSuperAdmin, deleteDataset);

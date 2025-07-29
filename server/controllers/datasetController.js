@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const Dataset = require('../models/dataset');
+const User = require('../models/user');
 
 // Obtener todos los datasets disponibles para etiquetado
 const getAvailableDatasets = async (req, res) => {
@@ -275,11 +276,108 @@ const getDatasetStats = async (req, res) => {
     }
 };
 
+// Obtener datasets asignados al usuario autenticado
+const getMyAssignedDatasets = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { status } = req.query;
+        
+        const user = await User.findById(userId)
+            .populate({
+                path: 'assignedDatasets.dataset',
+                select: 'name description category difficulty length expectedChangePoints tags createdAt data'
+            });
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+        
+        let assignedDatasets = user.assignedDatasets;
+        
+        // Filtrar por status si se especifica
+        if (status && status !== 'all') {
+            assignedDatasets = assignedDatasets.filter(assigned => assigned.status === status);
+        }
+        
+        res.status(200).json({
+            success: true,
+            data: assignedDatasets
+        });
+        
+    } catch (error) {
+        console.error('Error al obtener datasets asignados:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
+// Actualizar status de un dataset asignado
+const updateAssignedDatasetStatus = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { datasetId } = req.params;
+        const { status } = req.body;
+        
+        if (!['pending', 'in_progress', 'completed'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Status inválido'
+            });
+        }
+        
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+        
+        const assignedDataset = user.assignedDatasets.find(
+            assigned => assigned.dataset.toString() === datasetId
+        );
+        
+        if (!assignedDataset) {
+            return res.status(404).json({
+                success: false,
+                message: 'Dataset no asignado a este usuario'
+            });
+        }
+        
+        assignedDataset.status = status;
+        if (status === 'completed') {
+            assignedDataset.completedAt = new Date();
+        }
+        
+        await user.save();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Status actualizado exitosamente',
+            data: assignedDataset
+        });
+        
+    } catch (error) {
+        console.error('Error al actualizar status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+};
+
 module.exports = {
     getAvailableDatasets,
     getDatasetById,
     createDataset,
     updateDataset,
     deleteDataset,
-    getDatasetStats
+    getDatasetStats,
+    getMyAssignedDatasets,
+    updateAssignedDatasetStatus
 }; 

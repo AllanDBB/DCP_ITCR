@@ -418,6 +418,99 @@ class ApiService {
     throw new Error(response.message || 'Error al obtener estadísticas');
   }
 
+  // Métodos de gestión de usuarios (admin)
+  async getAllUsers(params?: {
+    page?: number;
+    limit?: number;
+    role?: string;
+  }): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.role) queryParams.append('role', params.role);
+
+    const response = await this.request(`/admin/users?${queryParams}`);
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al obtener usuarios');
+  }
+
+  async getUserStats(): Promise<any> {
+    const response = await this.request('/admin/users/stats');
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al obtener estadísticas de usuarios');
+  }
+
+  async assignDatasetToUser(userId: string, datasetId: string): Promise<any> {
+    const response = await this.request('/admin/users/assign', {
+      method: 'POST',
+      body: JSON.stringify({ userId, datasetId }),
+    });
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al asignar dataset');
+  }
+
+  async removeDatasetAssignment(userId: string, datasetId: string): Promise<any> {
+    const response = await this.request(`/admin/users/${userId}/assignments/${datasetId}`, {
+      method: 'DELETE',
+    });
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al remover asignación');
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<any> {
+    const response = await this.request(`/admin/users/${userId}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    });
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al actualizar rol');
+  }
+
+  // Métodos para usuarios - datasets asignados
+  async getMyAssignedDatasets(status?: string): Promise<any> {
+    const queryParams = status ? `?status=${status}` : '';
+    const response = await this.request(`/datasets/my/assigned${queryParams}`);
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al obtener datasets asignados');
+  }
+
+  async updateAssignedDatasetStatus(datasetId: string, status: string): Promise<any> {
+    const response = await this.request(`/datasets/my/assigned/${datasetId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al actualizar status del dataset');
+  }
+
   async verifyToken(): Promise<boolean> {
     try {
       const response = await this.request('/auth/verify');

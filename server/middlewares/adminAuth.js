@@ -6,7 +6,7 @@ const requireAdmin = (req, res, next) => {
         });
     }
     
-    if (!['admin', 'superadmin'].includes(req.user.role)) {
+    if (req.user.role !== 'admin') {
         return res.status(403).json({
             success: false,
             message: 'Acceso denegado - permisos de administrador requeridos'
@@ -24,7 +24,7 @@ const requireSuperAdmin = (req, res, next) => {
         });
     }
     
-    if (req.user.role !== 'superadmin') {
+    if (req.user.role !== 'admin') {
         return res.status(403).json({
             success: false,
             message: 'Acceso denegado - permisos de super administrador requeridos'
