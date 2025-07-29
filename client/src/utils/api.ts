@@ -18,6 +18,7 @@ interface RegisterData {
   username: string;
   email: string;
   password: string;
+  university?: string;
 }
 
 interface LoginData {
@@ -25,14 +26,68 @@ interface LoginData {
   password: string;
 }
 
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  role?: string;
+  photoUrl?: string;
+  university?: string;
+  bio?: string;
+  phone?: string;
+  website?: string;
+  location?: string;
+  hasCompletedTraining?: boolean;
+  trainingCompletedAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 interface AuthResponse {
   token: string;
-  user: {
-    id: string;
-    username: string;
-    email: string;
-    createdAt: string;
-  };
+  user: User;
+}
+
+interface UpdateProfileData {
+  university?: string;
+  bio?: string;
+  phone?: string;
+  website?: string;
+  location?: string;
+}
+
+interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}
+
+interface Dataset {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  difficulty: string;
+  length: number;
+  expectedChangePoints: number;
+  tags: string[];
+  data: [number, number][];
+  createdAt: string;
+}
+
+interface Label {
+  id: string;
+  datasetId: string;
+  changePoints: Array<{
+    position: number;
+    type: 'mean' | 'trend' | 'variance' | 'level';
+    confidence: number;
+    notes?: string;
+  }>;
+  noChangePoints: boolean;
+  confidence: number;
+  timeSpent: number;
+  status: string;
+  createdAt: string;
 }
 
 class ApiService {
@@ -53,11 +108,17 @@ class ApiService {
 
     // Agregar token de autorización si existe
     const token = this.getToken();
+    console.log('=== DEBUG: API Request ===');
+    console.log('Endpoint:', endpoint);
+    console.log('Token exists:', !!token);
+    console.log('Token value:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
+    
     if (token) {
       config.headers = {
         ...config.headers,
         'Authorization': `Bearer ${token}`,
       };
+      console.log('Authorization header set:', `Bearer ${token.substring(0, 20)}...`);
     }
 
     try {
@@ -130,6 +191,249 @@ class ApiService {
     throw new Error(response.message || 'Error al obtener el perfil');
   }
 
+  async updateProfile(profileData: UpdateProfileData): Promise<any> {
+    console.log('=== DEBUG API updateProfile ===');
+    console.log('Datos a enviar al servidor:', profileData);
+    console.log('JSON stringify:', JSON.stringify(profileData));
+    
+    const response = await this.request('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+    
+    console.log('Respuesta cruda del servidor:', response);
+    
+    if (response.success && response.user) {
+      console.log('✅ Actualización exitosa en API');
+      return response;
+    }
+    
+    console.log('❌ Error en actualización:', response.message);
+    throw new Error(response.message || 'Error al actualizar el perfil');
+  }
+
+  async updateProfilePhoto(photoUrl: string): Promise<any> {
+    const response = await this.request('/auth/profile/photo', {
+      method: 'PUT',
+      body: JSON.stringify({ photoUrl }),
+    });
+    
+    if (response.success && response.user) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al actualizar la foto de perfil');
+  }
+
+  async changePassword(passwordData: ChangePasswordData): Promise<any> {
+    const response = await this.request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(passwordData),
+    });
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al cambiar la contraseña');
+  }
+
+  async deleteAccount(password: string): Promise<any> {
+    const response = await this.request('/auth/account', {
+      method: 'DELETE',
+      body: JSON.stringify({ password }),
+    });
+    
+    if (response.success) {
+      this.removeToken();
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al eliminar la cuenta');
+  }
+
+  async completeTraining(): Promise<any> {
+    const response = await this.request('/auth/complete-training', {
+      method: 'POST',
+    });
+    
+    if (response.success && response.user) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al marcar capacitación como completada');
+  }
+
+  // Métodos para datasets
+  async getAvailableDatasets(params?: {
+    difficulty?: string;
+    category?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params?.difficulty) queryParams.append('difficulty', params.difficulty);
+    if (params?.category) queryParams.append('category', params.category);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const response = await this.request(`/datasets/available?${queryParams}`);
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al obtener datasets');
+  }
+
+  async getDatasetById(id: string): Promise<any> {
+    const response = await this.request(`/datasets/${id}`);
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al obtener dataset');
+  }
+
+  // Métodos para etiquetas
+  async createLabel(labelData: {
+    datasetId: string;
+    sessionId: string;
+    changePoints: Array<{
+      position: number;
+      type: 'mean' | 'trend' | 'variance' | 'level';
+      confidence?: number;
+      notes?: string;
+    }>;
+    noChangePoints?: boolean;
+    confidence?: number;
+    timeSpent?: number;
+    currentDatasetIndex?: number;
+  }): Promise<any> {
+    const response = await this.request('/labels', {
+      method: 'POST',
+      body: JSON.stringify(labelData),
+    });
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al crear etiqueta');
+  }
+
+  async getUserLabels(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.status) queryParams.append('status', params.status);
+
+    const response = await this.request(`/labels?${queryParams}`);
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al obtener etiquetas');
+  }
+
+  async getLabelStats(userId?: string): Promise<any> {
+    const queryParams = userId ? `?userId=${userId}` : '';
+    const response = await this.request(`/labels/stats${queryParams}`);
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al obtener estadísticas');
+  }
+
+  // Métodos de administración
+  async uploadDatasetFromCSV(formData: FormData): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/admin/upload-csv`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al subir dataset');
+    }
+
+    return data;
+  }
+
+  async getAllDatasets(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    difficulty?: string;
+    category?: string;
+  }): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.difficulty) queryParams.append('difficulty', params.difficulty);
+    if (params?.category) queryParams.append('category', params.category);
+
+    const response = await this.request(`/admin/datasets?${queryParams}`);
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al obtener datasets');
+  }
+
+  async updateDatasetStatus(id: string, updateData: {
+    status?: string;
+    difficulty?: string;
+    expectedChangePoints?: number;
+  }): Promise<any> {
+    const response = await this.request(`/admin/datasets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al actualizar dataset');
+  }
+
+  async deleteDataset(id: string): Promise<any> {
+    const response = await this.request(`/admin/datasets/${id}`, {
+      method: 'DELETE',
+    });
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al eliminar dataset');
+  }
+
+  async getAdminStats(): Promise<any> {
+    const response = await this.request('/admin/stats');
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al obtener estadísticas');
+  }
+
   async verifyToken(): Promise<boolean> {
     try {
       const response = await this.request('/auth/verify');
@@ -142,15 +446,26 @@ class ApiService {
 
   // Métodos para manejo de tokens
   setToken(token: string): void {
+    console.log('=== DEBUG: setToken ===');
+    console.log('Token to save:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
+    
     if (typeof window !== 'undefined') {
       localStorage.setItem('auth_token', token);
+      console.log('Token saved to localStorage');
+    } else {
+      console.log('Window not available, cannot save token');
     }
   }
 
   getToken(): string | null {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token');
+      console.log('=== DEBUG: getToken ===');
+      console.log('Token retrieved:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
+      return token;
     }
+    console.log('=== DEBUG: getToken ===');
+    console.log('Window not available, returning null');
     return null;
   }
 
@@ -166,4 +481,4 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
-export type { RegisterData, LoginData, AuthResponse };
+export type { RegisterData, LoginData, AuthResponse, User, UpdateProfileData, ChangePasswordData, Dataset, Label };

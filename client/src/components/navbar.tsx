@@ -131,6 +131,19 @@ const Navbar = () => {
                     >
                       Mi perfil
                     </Link>
+                    {/* Debug info */}
+                    <div className="px-4 py-2 text-xs text-gray-500 border-t border-gray-100">
+                      Rol: {user?.role || 'undefined'}
+                    </div>
+                    {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                      <Link
+                        href="/admin"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        Panel de Administración
+                      </Link>
+                    )}
                     <button
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                       onClick={handleLogout}
@@ -226,6 +239,15 @@ const Navbar = () => {
                 >
                   Mi perfil
                 </Link>
+                {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                  <Link
+                    href="/admin"
+                    className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Panel de Administración
+                  </Link>
+                )}
                 <div className="pt-1.5 pb-1">
                   <Button 
                     variant="primary"

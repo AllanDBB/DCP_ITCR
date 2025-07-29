@@ -11,7 +11,7 @@ export default function ProfilePage() {
   const { user, updateProfile, updateProfilePhoto, changePassword, deleteAccount, showToast } = useAuth();
   const router = useRouter();
 
-  // Estados para los datos del usuario (solo campos simplificados)
+  // Estados para los datos del usuario
   const [email, setEmail] = useState("");
   const [university, setUniversity] = useState("");
   const [bio, setBio] = useState("");
@@ -43,6 +43,8 @@ export default function ProfilePage() {
   // Cargar datos del usuario al montar el componente
   useEffect(() => {
     if (user) {
+      setFirstName(user.firstName || "");
+      setLastName(user.lastName || "");
       setEmail(user.email || "");
       setUniversity(user.university || "");
       setBio(user.bio || "");
@@ -99,16 +101,24 @@ export default function ProfilePage() {
     setError("");
     
     try {
-      await updateProfile({
+      const profileData = {
+        firstName,
+        lastName,
         university,
         bio,
         phone,
         website,
         location
-      });
+      };
+      
+      console.log('=== DEBUG Frontend ===');
+      console.log('Datos que se van a enviar:', profileData);
+      
+      await updateProfile(profileData);
       
       setIsEditingProfile(false);
     } catch (err: any) {
+      console.error('Error en handleUpdateProfile:', err);
       setError(err.message || "Error al actualizar el perfil");
     } finally {
       setLoading(false);
@@ -222,6 +232,50 @@ export default function ProfilePage() {
               )}
 
               <div className="space-y-6">
+                {/* Nombre y Apellido */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nombre
+                    </label>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      disabled={!isEditingProfile}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-700"
+                      placeholder="Tu nombre"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Apellido
+                    </label>
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      disabled={!isEditingProfile}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-700"
+                      placeholder="Tu apellido"
+                    />
+                  </div>
+                </div>
+
+                {/* Email (solo lectura) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Correo electrónico
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">El correo electrónico no se puede cambiar</p>
+                </div>
+
                 {/* Universidad */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -237,22 +291,6 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                {/* Email (solo lectura) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Correo Electrónico
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-700 cursor-not-allowed"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    El correo electrónico no puede ser modificado
-                  </p>
-                </div>
-
                 {/* Biografía */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -262,50 +300,31 @@ export default function ProfilePage() {
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     disabled={!isEditingProfile}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-700 resize-none"
-                    placeholder="Cuéntanos sobre ti..."
-                    maxLength={500}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-700"
+                    placeholder="Cuéntanos un poco sobre ti..."
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    {bio.length}/500 caracteres
-                  </p>
                 </div>
 
-                {/* Información de contacto */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Teléfono
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      disabled={!isEditingProfile}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-700"
-                      placeholder="Tu número de teléfono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ubicación
-                    </label>
-                    <input
-                      type="text"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      disabled={!isEditingProfile}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-700"
-                      placeholder="Tu ubicación"
-                    />
-                  </div>
+                {/* Teléfono */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    disabled={!isEditingProfile}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-700"
+                    placeholder="Tu número de teléfono"
+                  />
                 </div>
 
                 {/* Sitio web */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sitio Web
+                    Sitio web
                   </label>
                   <input
                     type="url"
@@ -317,37 +336,40 @@ export default function ProfilePage() {
                   />
                 </div>
 
+                {/* Ubicación */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ubicación
+                  </label>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    disabled={!isEditingProfile}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-700"
+                    placeholder="Tu ciudad o país"
+                  />
+                </div>
+
                 {/* Botones de acción */}
                 <div className="flex gap-3 pt-4">
-                  {!isEditingProfile ? (
-                    <button
-                      onClick={() => setIsEditingProfile(true)}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                    >
-                      Editar Perfil
-                    </button>
-                  ) : (
+                  {isEditingProfile ? (
                     <>
                       <button
                         onClick={handleUpdateProfile}
                         disabled={loading}
-                        className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {loading ? (
-                          <div className="flex items-center">
-                            <LoadingSpinner size="sm" />
-                            <span className="ml-2">Guardando...</span>
-                          </div>
-                        ) : (
-                          'Guardar Cambios'
-                        )}
+                        {loading && <LoadingSpinner size="sm" />}
+                        {loading ? 'Guardando...' : 'Guardar cambios'}
                       </button>
                       <button
                         onClick={() => {
                           setIsEditingProfile(false);
-                          setError("");
                           // Restaurar valores originales
                           if (user) {
+                            setFirstName(user.firstName || "");
+                            setLastName(user.lastName || "");
                             setUniversity(user.university || "");
                             setBio(user.bio || "");
                             setPhone(user.phone || "");
@@ -355,197 +377,62 @@ export default function ProfilePage() {
                             setLocation(user.location || "");
                           }
                         }}
-                        className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
                         Cancelar
                       </button>
                     </>
+                  ) : (
+                    <button
+                      onClick={() => setIsEditingProfile(true)}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Editar perfil
+                    </button>
                   )}
                 </div>
               </div>
             </div>
-
-            {/* Sección de cambio de contraseña */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">Cambiar Contraseña</h2>
-              
-              {!isChangingPassword ? (
-                <button
-                  onClick={() => setIsChangingPassword(true)}
-                  className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors"
-                >
-                  Cambiar Contraseña
-                </button>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Contraseña Actual
-                    </label>
-                    <input
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Ingresa tu contraseña actual"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nueva Contraseña
-                    </label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Ingresa tu nueva contraseña"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirmar Nueva Contraseña
-                    </label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Confirma tu nueva contraseña"
-                    />
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleUpdatePassword}
-                      disabled={loading}
-                      className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
-                    >
-                      {loading ? (
-                        <div className="flex items-center">
-                          <LoadingSpinner size="sm" />
-                          <span className="ml-2">Actualizando...</span>
-                        </div>
-                      ) : (
-                        'Actualizar Contraseña'
-                      )}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsChangingPassword(false);
-                        setCurrentPassword("");
-                        setNewPassword("");
-                        setConfirmPassword("");
-                        setError("");
-                      }}
-                      className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Sección de eliminar cuenta */}
-            <div className="bg-white rounded-lg shadow-sm border border-red-200 p-6 mt-6">
-              <h2 className="text-xl font-semibold text-red-600 mb-6">Zona Peligrosa</h2>
-              
-              {!isDeletingAccount ? (
-                <div>
-                  <p className="text-gray-600 mb-4">
-                    Una vez que elimines tu cuenta, no podrás recuperarla. Esta acción es permanente.
-                  </p>
-                  <button
-                    onClick={() => setIsDeletingAccount(true)}
-                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-                  >
-                    Eliminar Cuenta
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-red-600 font-medium">
-                    ⚠️ ¿Estás seguro de que quieres eliminar tu cuenta?
-                  </p>
-                  <p className="text-gray-600 text-sm">
-                    Esta acción no se puede deshacer. Todos tus datos serán eliminados permanentemente.
-                  </p>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirma tu contraseña para continuar
-                    </label>
-                    <input
-                      type="password"
-                      value={deletePassword}
-                      onChange={(e) => setDeletePassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                      placeholder="Ingresa tu contraseña"
-                    />
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleDeleteAccount}
-                      disabled={loading}
-                      className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
-                    >
-                      {loading ? (
-                        <div className="flex items-center">
-                          <LoadingSpinner size="sm" />
-                          <span className="ml-2">Eliminando...</span>
-                        </div>
-                      ) : (
-                        'Sí, Eliminar Mi Cuenta'
-                      )}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsDeletingAccount(false);
-                        setDeletePassword("");
-                        setError("");
-                      }}
-                      className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
 
-          {/* Columna derecha - Información de la cuenta */}
-          <div className="lg:col-span-1">
+          {/* Columna derecha - Foto de perfil y configuraciones */}
+          <div className="space-y-6">
+            {/* Foto de perfil */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-6">Información de la Cuenta</h2>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Foto de perfil</h3>
               
-              {/* Foto de perfil */}
-              <div className="flex flex-col items-center mb-6">
-                <div className="relative group cursor-pointer" onClick={handleImageClick}>
-                  <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+              <div className="flex flex-col items-center">
+                <div className="relative mb-4">
+                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200">
                     {photoUrl ? (
                       <Image
                         src={photoUrl}
                         alt="Foto de perfil"
-                        width={96}
-                        height={96}
+                        width={128}
+                        height={128}
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
+                      <div className="w-full h-full flex items-center justify-center">
+                        <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
                     )}
                   </div>
-                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  
+                  <button
+                    onClick={handleImageClick}
+                    disabled={loading}
+                    className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                  </div>
+                  </button>
                 </div>
-                <p className="text-sm text-gray-500 mt-2 text-center">
-                  Haz clic para cambiar tu foto de perfil
-                </p>
+                
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -553,51 +440,141 @@ export default function ProfilePage() {
                   onChange={handleFileChange}
                   className="hidden"
                 />
+                
+                <p className="text-sm text-gray-500 text-center">
+                  Haz clic en el ícono de cámara para cambiar tu foto de perfil
+                </p>
               </div>
+            </div>
 
-              {/* Información del usuario */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500">Usuario</label>
-                  <p className="text-gray-900 font-medium">{user.username}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500">Rol</label>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    user.role === 'admin' 
-                      ? 'bg-purple-100 text-purple-800' 
-                      : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {user.role === 'admin' ? 'Administrador' : 'Usuario'}
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500">Miembro desde</label>
-                  <p className="text-gray-900">
-                    {new Date(user.createdAt).toLocaleDateString('es-ES', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                </div>
-                {user.hasCompletedTraining && (
+            {/* Cambiar contraseña */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Cambiar contraseña</h3>
+              
+              {isChangingPassword ? (
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-500">Capacitación completada</label>
-                    <div className="flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-green-600 font-medium">Completada</span>
-                    </div>
-                    {user.trainingCompletedAt && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(user.trainingCompletedAt).toLocaleDateString('es-ES')}
-                      </p>
-                    )}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Contraseña actual
+                    </label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Tu contraseña actual"
+                    />
                   </div>
-                )}
-              </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nueva contraseña
+                    </label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Nueva contraseña"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirmar nueva contraseña
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Confirma la nueva contraseña"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleUpdatePassword}
+                      disabled={loading}
+                      className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                    >
+                      {loading && <LoadingSpinner size="sm" />}
+                      {loading ? 'Cambiando...' : 'Cambiar contraseña'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsChangingPassword(false);
+                        setCurrentPassword("");
+                        setNewPassword("");
+                        setConfirmPassword("");
+                      }}
+                      className="px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsChangingPassword(true)}
+                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Cambiar contraseña
+                </button>
+              )}
+            </div>
+
+            {/* Eliminar cuenta */}
+            <div className="bg-white rounded-lg shadow-sm border border-red-200 p-6">
+              <h3 className="text-lg font-semibold text-red-800 mb-4">Zona de peligro</h3>
+              
+              {isDeletingAccount ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-red-600">
+                    Esta acción no se puede deshacer. Se eliminará permanentemente tu cuenta y todos tus datos.
+                  </p>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Contraseña para confirmar
+                    </label>
+                    <input
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      placeholder="Tu contraseña"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDeleteAccount}
+                      disabled={loading}
+                      className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                    >
+                      {loading && <LoadingSpinner size="sm" />}
+                      {loading ? 'Eliminando...' : 'Eliminar cuenta'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsDeletingAccount(false);
+                        setDeletePassword("");
+                      }}
+                      className="px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsDeletingAccount(true)}
+                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Eliminar cuenta
+                </button>
+              )}
             </div>
           </div>
         </div>

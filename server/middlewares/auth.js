@@ -8,7 +8,10 @@ const verifyToken = async (req, res, next) => {
                      req.header('x-auth-token') ||
                      req.cookies?.token;
 
+        console.log('🔍 Verificando token para endpoint:', req.path);
+
         if (!token) {
+            console.log('❌ No se proporcionó token');
             return res.status(401).json({
                 success: false,
                 message: 'No se proporcionó token de acceso'
@@ -20,19 +23,25 @@ const verifyToken = async (req, res, next) => {
         
         // Verificar que el usuario existe
         const user = await User.findById(decoded.userId).select('-password');
+        
         if (!user) {
+            console.log('❌ Usuario no encontrado en la base de datos. ID:', decoded.userId);
             return res.status(401).json({
                 success: false,
                 message: 'Token inválido - usuario no encontrado'
             });
         }
 
+        console.log('✅ Usuario autenticado:', user.username);
+        
         // Agregar userId a la request
         req.userId = decoded.userId;
         req.user = user;
         next();
 
     } catch (error) {
+        console.log('ERROR en verificación de token:', error.message);
+        
         if (error.name === 'JsonWebTokenError') {
             return res.status(401).json({
                 success: false,
