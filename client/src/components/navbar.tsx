@@ -133,10 +133,6 @@ const Navbar = () => {
                       Mi perfil
                     </Link>
                     */}
-                    {/* Debug info */}
-                    <div className="px-4 py-2 text-xs text-gray-500 border-t border-gray-100">
-                      Rol: {user?.role || 'undefined'}
-                    </div>
                     {(user?.role === 'admin' || user?.role === 'superadmin') && (
                       <Link
                         href="/admin"
