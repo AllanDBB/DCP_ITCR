@@ -203,7 +203,7 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
-          <p className="text-gray-600 mt-2">Gestiona datasets y configuración del sistema</p>
+          <p className="text-black mt-2">Gestiona datasets y configuración del sistema</p>
         </div>
 
         {/* Tabs */}
@@ -259,13 +259,13 @@ export default function AdminPage() {
         {activeTab === 'upload' && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Cargar Dataset desde CSV</h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-black mb-6">
               Sube un archivo CSV con datos de series temporales. El archivo debe contener columnas 'x' e 'y' o 'index' y 'value'.
             </p>
             
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Archivo CSV
                 </label>
                 <input
@@ -275,7 +275,7 @@ export default function AdminPage() {
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
                 {csvFile && (
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-black mt-1">
                     Archivo seleccionado: {csvFile.name} ({(csvFile.size / 1024).toFixed(1)} KB)
                   </p>
                 )}
@@ -283,7 +283,7 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-black mb-2">
                     Nombre del Dataset
                   </label>
                   <input
@@ -295,7 +295,7 @@ export default function AdminPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-black mb-2">
                     Categoría
                   </label>
                   <select
@@ -313,7 +313,7 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Descripción
                 </label>
                 <textarea
@@ -327,7 +327,7 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-black mb-2">
                     Fuente
                   </label>
                   <input
@@ -339,7 +339,7 @@ export default function AdminPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-black mb-2">
                     Dificultad
                   </label>
                   <select
@@ -353,7 +353,7 @@ export default function AdminPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-black mb-2">
                     Change Points Esperados
                   </label>
                   <input
@@ -367,7 +367,7 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Etiquetas (separadas por comas)
                 </label>
                 <input
@@ -397,7 +397,7 @@ export default function AdminPage() {
               <h3 className="text-lg font-semibold mb-4">Filtros</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                  <label className="block text-sm font-medium text-black mb-2">Estado</label>
                   <select
                     value={filters.status}
                     onChange={(e) => setFilters({ ...filters, status: e.target.value })}
@@ -410,7 +410,7 @@ export default function AdminPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Dificultad</label>
+                  <label className="block text-sm font-medium text-black mb-2">Dificultad</label>
                   <select
                     value={filters.difficulty}
                     onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
@@ -423,7 +423,7 @@ export default function AdminPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                  <label className="block text-sm font-medium text-black mb-2">Categoría</label>
                   <select
                     value={filters.category}
                     onChange={(e) => setFilters({ ...filters, category: e.target.value })}
