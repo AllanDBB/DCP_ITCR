@@ -107,6 +107,7 @@ class ApiService {
     const token = this.getToken();
     console.log('=== DEBUG: API Request ===');
     console.log('Endpoint:', endpoint);
+    console.log('Full URL:', url);
     console.log('Token exists:', !!token);
     console.log('Token value:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
     
@@ -119,16 +120,42 @@ class ApiService {
     }
 
     try {
+      console.log('Making request to:', url);
       const response = await fetch(url, config);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (!response.ok) {
-        throw new Error(data.message || 'Error en la solicitud');
+        console.error('HTTP Error:', response.status, response.statusText);
+        console.error('Error data:', data);
+        
+        // Crear error específico según el código HTTP
+        const errorMessage = data.message || `Error ${response.status}: ${response.statusText}`;
+        const error = new Error(errorMessage);
+        (error as any).status = response.status;
+        (error as any).statusText = response.statusText;
+        (error as any).data = data;
+        
+        throw error;
       }
 
       return data;
     } catch (error) {
-      console.error('Error en API:', error);
+      console.error('=== DEBUG: API Request Error ===');
+      console.error('Error type:', error?.constructor?.name);
+      console.error('Error message:', (error as Error).message);
+      console.error('Full error:', error);
+      
+      // Si es un error de red (no hay respuesta del servidor)
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        const networkError = new Error('Error de conexión: No se puede conectar al servidor');
+        (networkError as any).isNetworkError = true;
+        throw networkError;
+      }
+      
       throw error;
     }
   }
@@ -507,13 +534,46 @@ class ApiService {
   // Métodos para usuarios - datasets asignados
   async getMyAssignedDatasets(status?: string): Promise<any> {
     const queryParams = status ? `?status=${status}` : '';
-    const response = await this.request(`/datasets/my/assigned${queryParams}`);
+    console.log('=== DEBUG: getMyAssignedDatasets ===');
+    console.log('Endpoint:', `/datasets/my/assigned${queryParams}`);
+    console.log('Status filter:', status);
     
-    if (response.success) {
-      return response;
+    try {
+      const response = await this.request(`/datasets/my/assigned${queryParams}`);
+      console.log('=== DEBUG: Raw response ===', response);
+      
+      if (response.success) {
+        return response;
+      }
+      
+      throw new Error(response.message || 'Error al obtener datasets asignados');
+    } catch (error: any) {
+      console.error('=== DEBUG: Error en getMyAssignedDatasets ===', error);
+      
+      // Si es un error de red o parsing
+      if (error.name === 'TypeError' || error.name === 'SyntaxError') {
+        throw new Error('Error de conexión con el servidor. Verifica tu conexión a internet.');
+      }
+      
+      // Si es un error HTTP específico
+      if (error.message.includes('401')) {
+        throw new Error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+      }
+      
+      if (error.message.includes('403')) {
+        throw new Error('No tienes permisos para acceder a tus datasets asignados.');
+      }
+      
+      if (error.message.includes('404')) {
+        throw new Error('El servicio de datasets asignados no está disponible.');
+      }
+      
+      if (error.message.includes('500')) {
+        throw new Error('Error interno del servidor. Contacta al administrador.');
+      }
+      
+      throw error;
     }
-    
-    throw new Error(response.message || 'Error al obtener datasets asignados');
   }
 
   async updateAssignedDatasetStatus(datasetId: string, status: string): Promise<any> {

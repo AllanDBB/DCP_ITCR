@@ -245,9 +245,9 @@ export default function AdminPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
-      case 'inactive': return 'bg-gray-100 text-gray-800';
+      case 'inactive': return 'bg-gray-100 text-black';
       case 'completed': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-black';
     }
   };
 
@@ -256,7 +256,7 @@ export default function AdminPage() {
       case 'easy': return 'bg-green-100 text-green-800';
       case 'medium': return 'bg-yellow-100 text-yellow-800';
       case 'hard': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-black';
     }
   };
 
@@ -264,7 +264,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
+          <h1 className="text-3xl font-bold text-black">Panel de Administración</h1>
           <p className="text-black mt-2">Gestiona datasets y configuración del sistema</p>
         </div>
 
@@ -277,7 +277,7 @@ export default function AdminPage() {
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'upload'
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-black hover:text-black hover:border-gray-300'
                 }`}
               >
                 📤 Cargar Dataset
@@ -287,7 +287,7 @@ export default function AdminPage() {
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'datasets'
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-black hover:text-black hover:border-gray-300'
                 }`}
               >
                 📊 Gestionar Datasets
@@ -297,7 +297,7 @@ export default function AdminPage() {
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'stats'
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-black hover:text-black hover:border-gray-300'
                 }`}
               >
                 📈 Estadísticas
@@ -320,7 +320,7 @@ export default function AdminPage() {
         {/* Tab Content */}
         {activeTab === 'upload' && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Cargar Dataset desde CSV</h2>
+            <h2 className="text-xl font-semibold mb-4 text-black">Cargar Dataset desde CSV</h2>
             <p className="text-black mb-6">
               Sube un archivo CSV con datos de series temporales. El archivo debe contener columnas 'x' e 'y' o 'index' y 'value'.
             </p>
@@ -334,7 +334,7 @@ export default function AdminPage() {
                   type="file"
                   accept=".csv"
                   onChange={handleFileChange}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  className="block w-full text-sm text-black file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
                 {csvFile && (
                   <p className="text-sm text-black mt-1">
@@ -456,7 +456,7 @@ export default function AdminPage() {
           <div className="space-y-6">
             {/* Filtros */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold mb-4">Filtros</h3>
+              <h3 className="text-lg font-semibold mb-4 text-black">Filtros</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-black mb-2">Estado</label>
@@ -505,7 +505,7 @@ export default function AdminPage() {
             {/* Lista de datasets */}
             <div className="bg-white rounded-lg shadow">
               <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold">Datasets ({datasets.length})</h3>
+                <h3 className="text-lg font-semibold text-black">Datasets ({datasets.length})</h3>
               </div>
               <div className="p-6">
                 {loading ? (
@@ -513,7 +513,7 @@ export default function AdminPage() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
                 ) : datasets.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-black">
                     No se encontraron datasets
                   </div>
                 ) : (
@@ -522,8 +522,8 @@ export default function AdminPage() {
                       <div key={dataset._id} className="border rounded-lg p-4 hover:bg-gray-50">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <h3 className="font-semibold text-lg">{dataset.name}</h3>
-                            <p className="text-gray-600 text-sm mt-1">{dataset.description}</p>
+                            <h3 className="font-semibold text-lg text-black">{dataset.name}</h3>
+                            <p className="text-black text-sm mt-1">{dataset.description}</p>
                             <div className="flex items-center gap-2 mt-2">
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(dataset.status)}`}>
                                 {dataset.status === 'active' ? 'Activo' : 
@@ -533,10 +533,10 @@ export default function AdminPage() {
                                 {dataset.difficulty === 'easy' ? 'Fácil' :
                                  dataset.difficulty === 'medium' ? 'Medio' : 'Difícil'}
                               </span>
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-black">
                                 {dataset.category}
                               </span>
-                              <span className="text-sm text-gray-500">
+                              <span className="text-sm text-black">
                                 {dataset.length} puntos • {dataset.expectedChangePoints} CP esperados
                               </span>
                             </div>
@@ -575,7 +575,7 @@ export default function AdminPage() {
                       >
                         Anterior
                       </button>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-black">
                         Página {currentPage} de {totalPages}
                       </span>
                       <button
@@ -597,28 +597,28 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-500">Total Datasets</h3>
+                <h3 className="text-sm font-medium text-black">Total Datasets</h3>
                 <span className="text-2xl font-bold">{stats.total}</span>
               </div>
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-500">Promedio de Puntos</h3>
+                <h3 className="text-sm font-medium text-black">Promedio de Puntos</h3>
                 <span className="text-2xl font-bold">{stats.averageLength}</span>
               </div>
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-500">CP Promedio Esperados</h3>
+                <h3 className="text-sm font-medium text-black">CP Promedio Esperados</h3>
                 <span className="text-2xl font-bold">{stats.averageExpectedCP}</span>
               </div>
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-500">Activos</h3>
+                <h3 className="text-sm font-medium text-black">Activos</h3>
                 <span className="text-2xl font-bold text-green-600">{stats.byStatus.active}</span>
               </div>
             </div>

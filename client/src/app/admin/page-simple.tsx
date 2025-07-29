@@ -185,8 +185,8 @@ export default function AdminPageSimple() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Acceso Denegado</h1>
-          <p className="text-gray-600">No tienes permisos para acceder a esta página.</p>
+          <h1 className="text-2xl font-bold text-black mb-4">Acceso Denegado</h1>
+          <p className="text-black">No tienes permisos para acceder a esta página.</p>
         </div>
       </div>
     );
@@ -196,8 +196,8 @@ export default function AdminPageSimple() {
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
-          <p className="mt-2 text-gray-600">Gestiona datasets, usuarios y asignaciones</p>
+          <h1 className="text-3xl font-bold text-black">Panel de Administración</h1>
+          <p className="mt-2 text-black">Gestiona datasets, usuarios y asignaciones</p>
         </div>
 
         {/* Mensajes */}
@@ -225,7 +225,7 @@ export default function AdminPageSimple() {
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    : 'border-transparent text-black hover:text-black'
                 }`}
               >
                 {tab === 'upload' && 'Subir CSV'}
@@ -243,7 +243,7 @@ export default function AdminPageSimple() {
             <h2 className="text-xl font-semibold mb-4">Subir Dataset desde CSV</h2>
             <form onSubmit={handleFileUpload} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Archivo CSV
                 </label>
                 <input
@@ -284,11 +284,11 @@ export default function AdminPageSimple() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dificultad</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Puntos</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Nombre</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Categoría</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Dificultad</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Estado</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Puntos</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -296,11 +296,11 @@ export default function AdminPageSimple() {
                       <tr key={dataset._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{dataset.name}</div>
-                            <div className="text-sm text-gray-500">{dataset.description}</div>
+                            <div className="text-sm font-medium text-black">{dataset.name}</div>
+                            <div className="text-sm text-black">{dataset.description}</div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
                           {dataset.category}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -315,13 +315,13 @@ export default function AdminPageSimple() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             dataset.status === 'active' ? 'bg-green-100 text-green-800' :
-                            dataset.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                            dataset.status === 'inactive' ? 'bg-gray-100 text-black' :
                             'bg-blue-100 text-blue-800'
                           }`}>
                             {dataset.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
                           {dataset.length}
                         </td>
                       </tr>
@@ -342,15 +342,15 @@ export default function AdminPageSimple() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-blue-600">{userStats.totalUsers}</div>
-                    <div className="text-sm text-gray-600">Total Usuarios</div>
+                    <div className="text-sm text-black">Total Usuarios</div>
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-green-600">{userStats.assignments.usersWithAssignments}</div>
-                    <div className="text-sm text-gray-600">Con Asignaciones</div>
+                    <div className="text-sm text-black">Con Asignaciones</div>
                   </div>
                   <div className="bg-purple-50 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-purple-600">{userStats.assignments.totalAssignments}</div>
-                    <div className="text-sm text-gray-600">Total Asignaciones</div>
+                    <div className="text-sm text-black">Total Asignaciones</div>
                   </div>
                 </div>
               </div>
@@ -375,10 +375,10 @@ export default function AdminPageSimple() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rol</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asignaciones</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Registro</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Usuario</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Rol</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Asignaciones</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Registro</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -386,21 +386,21 @@ export default function AdminPageSimple() {
                         <tr key={user._id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
-                              <div className="text-sm font-medium text-gray-900">{user.username}</div>
-                              <div className="text-sm text-gray-500">{user.email}</div>
+                              <div className="text-sm font-medium text-black">{user.username}</div>
+                              <div className="text-sm text-black">{user.email}</div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                              user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-black'
                             }`}>
                               {user.role}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
                             {user.assignedDatasets.length}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
                             {new Date(user.createdAt).toLocaleDateString()}
                           </td>
                         </tr>
@@ -422,7 +422,7 @@ export default function AdminPageSimple() {
               <h3 className="text-lg font-medium mb-4">Asignar Dataset a Usuario</h3>
               <form onSubmit={handleAssignDataset} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Usuario</label>
+                  <label className="block text-sm font-medium text-black mb-2">Usuario</label>
                   <select
                     value={selectedUser}
                     onChange={(e) => setSelectedUser(e.target.value)}
@@ -439,7 +439,7 @@ export default function AdminPageSimple() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Dataset</label>
+                  <label className="block text-sm font-medium text-black mb-2">Dataset</label>
                   <select
                     value={selectedDataset}
                     onChange={(e) => setSelectedDataset(e.target.value)}
@@ -473,10 +473,10 @@ export default function AdminPageSimple() {
               {users.filter(u => u.assignedDatasets.length > 0).map(user => (
                 <div key={user._id} className="mb-4 p-4 border border-gray-200 rounded-lg">
                   <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium text-gray-900">
+                    <h4 className="font-medium text-black">
                       {user.username} ({user.email})
                     </h4>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-black">
                       {user.assignedDatasets.length} asignación(es)
                     </span>
                   </div>

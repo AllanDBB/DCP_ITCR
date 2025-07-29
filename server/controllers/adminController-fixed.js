@@ -347,12 +347,14 @@ const uploadMultipleDatasetsFromCSV = (req, res) => {
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({}, '-password')
-            .populate('assignedDatasets.dataset', 'title description')
+            .populate('assignedDatasets.dataset', 'name description')
             .sort({ createdAt: -1 });
         
         res.json({
             success: true,
-            users
+            data: {
+                users
+            }
         });
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
@@ -370,7 +372,9 @@ const getAllDatasets = async (req, res) => {
         
         res.json({
             success: true,
-            datasets
+            data: {
+                datasets
+            }
         });
     } catch (error) {
         console.error('Error al obtener datasets:', error);
@@ -535,22 +539,42 @@ const getAdminStats = async (req, res) => {
 const getUserStats = async (req, res) => {
     try {
         const users = await User.find({}, 'username email role assignedDatasets')
-            .populate('assignedDatasets.dataset', 'title');
+            .populate('assignedDatasets.dataset', 'name');
 
-        const userStats = users.map(user => ({
-            id: user._id,
-            username: user.username,
-            email: user.email,
-            role: user.role,
-            assignedCount: user.assignedDatasets.length,
-            completedCount: user.assignedDatasets.filter(a => a.status === 'completed').length,
-            pendingCount: user.assignedDatasets.filter(a => a.status === 'pending').length,
-            inProgressCount: user.assignedDatasets.filter(a => a.status === 'in_progress').length
-        }));
+        const totalUsers = users.length;
+        const usersByRole = {
+            admin: users.filter(u => u.role === 'admin').length,
+            user: users.filter(u => u.role === 'user').length
+        };
+
+        const usersWithAssignments = users.filter(u => u.assignedDatasets.length > 0).length;
+        const totalAssignments = users.reduce((total, user) => total + user.assignedDatasets.length, 0);
+        
+        const byStatus = {
+            pending: 0,
+            in_progress: 0,
+            completed: 0
+        };
+
+        users.forEach(user => {
+            user.assignedDatasets.forEach(assignment => {
+                if (byStatus[assignment.status] !== undefined) {
+                    byStatus[assignment.status]++;
+                }
+            });
+        });
 
         res.json({
             success: true,
-            userStats
+            data: {
+                totalUsers,
+                usersByRole,
+                assignments: {
+                    usersWithAssignments,
+                    totalAssignments,
+                    byStatus
+                }
+            }
         });
     } catch (error) {
         console.error('Error al obtener estadísticas de usuarios:', error);

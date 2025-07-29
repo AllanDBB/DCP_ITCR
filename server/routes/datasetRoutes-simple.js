@@ -7,6 +7,13 @@ const {
     deleteDataset, 
     getDatasetStats
 } = require('../controllers/datasetController-simple');
+
+// Importar métodos adicionales del controlador completo
+const { 
+    getMyAssignedDatasets,
+    updateAssignedDatasetStatus
+} = require('../controllers/datasetController');
+
 const { verifyToken } = require('../middlewares/auth');
 
 const router = express.Router();
@@ -18,6 +25,12 @@ router.get('/:id', getDatasetById);
 
 // Rutas protegidas
 router.use(verifyToken);
+
+// Rutas para datasets asignados a usuarios
+router.get('/my/assigned', getMyAssignedDatasets);
+router.put('/my/assigned/:datasetId/status', updateAssignedDatasetStatus);
+
+// Rutas administrativas
 router.post('/', createDataset);
 router.put('/:id', updateDataset);
 router.delete('/:id', deleteDataset);
