@@ -73,7 +73,6 @@ const register = async (req, res) => {
             // Campo de perfil del registro (opcional)
             university: university || null,
             // Campos de perfil inicializados vacíos
-            bio: null,
             phone: null,
             website: null,
             location: null,
@@ -100,7 +99,6 @@ const register = async (req, res) => {
                 email: newUser.email,
                 role: newUser.role,
                 university: newUser.university,
-                bio: newUser.bio,
                 phone: newUser.phone,
                 website: newUser.website,
                 location: newUser.location,
@@ -167,7 +165,6 @@ const login = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 university: user.university,
-                bio: user.bio,
                 phone: user.phone,
                 website: user.website,
                 location: user.location,
@@ -205,7 +202,6 @@ const getProfile = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 university: user.university,
-                bio: user.bio,
                 phone: user.phone,
                 website: user.website,
                 location: user.location,
@@ -368,7 +364,6 @@ const updateProfile = async (req, res) => {
 
         const {
             university,
-            bio,
             phone,
             website,
             location
@@ -376,7 +371,6 @@ const updateProfile = async (req, res) => {
 
         console.log('Campos extraídos:', {
             university,
-            bio,
             phone,
             website,
             location
@@ -387,7 +381,6 @@ const updateProfile = async (req, res) => {
         // Actualizar el perfil del usuario
         const updateData = {
             university,
-            bio,
             phone,
             website,
             location,
@@ -420,7 +413,6 @@ const updateProfile = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 university: user.university,
-                bio: user.bio,
                 phone: user.phone,
                 website: user.website,
                 location: user.location,
@@ -567,7 +559,6 @@ const completeTraining = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 university: user.university,
-                bio: user.bio,
                 phone: user.phone,
                 website: user.website,
                 location: user.location,

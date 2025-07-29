@@ -89,12 +89,6 @@ const updateProfileValidation = [
         .isLength({ max: 100 })
         .withMessage('La universidad debe tener máximo 100 caracteres'),
     
-    body('bio')
-        .optional()
-        .trim()
-        .isLength({ max: 500 })
-        .withMessage('La biografía debe tener máximo 500 caracteres'),
-    
     body('phone')
         .optional()
         .trim()
@@ -177,7 +171,6 @@ router.get('/verify', verifyToken, (req, res) => {
             email: req.user.email,
             role: req.user.role,
             university: req.user.university,
-            bio: req.user.bio,
             phone: req.user.phone,
             website: req.user.website,
             location: req.user.location,

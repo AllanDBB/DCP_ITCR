@@ -13,7 +13,6 @@ export default function ProfilePage() {
   // Estados para los datos del usuario (solo campos simplificados)
   const [email, setEmail] = useState("");
   const [university, setUniversity] = useState("");
-  const [bio, setBio] = useState("");
   const [phone, setPhone] = useState("");
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
@@ -40,7 +39,6 @@ export default function ProfilePage() {
     if (user) {
       setEmail(user.email || "");
       setUniversity(user.university || "");
-      setBio(user.bio || "");
       setPhone(user.phone || "");
       setWebsite(user.website || "");
       setLocation(user.location || "");
@@ -62,7 +60,6 @@ export default function ProfilePage() {
     try {
       await updateProfile({
         university,
-        bio,
         phone,
         website,
         location
@@ -214,25 +211,6 @@ export default function ProfilePage() {
                   </p>
                 </div>
 
-                {/* Biografía */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Biografía
-                  </label>
-                  <textarea
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    disabled={!isEditingProfile}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-700 resize-none"
-                    placeholder="Cuéntanos sobre ti..."
-                    maxLength={500}
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    {bio.length}/500 caracteres
-                  </p>
-                </div>
-
                 {/* Información de contacto */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -310,7 +288,6 @@ export default function ProfilePage() {
                           // Restaurar valores originales
                           if (user) {
                             setUniversity(user.university || "");
-                            setBio(user.bio || "");
                             setPhone(user.phone || "");
                             setWebsite(user.website || "");
                             setLocation(user.location || "");

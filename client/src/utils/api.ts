@@ -32,7 +32,6 @@ interface User {
   email: string;
   role?: string;
   university?: string;
-  bio?: string;
   phone?: string;
   website?: string;
   location?: string;
@@ -49,7 +48,6 @@ interface AuthResponse {
 
 interface UpdateProfileData {
   university?: string;
-  bio?: string;
   phone?: string;
   website?: string;
   location?: string;
