@@ -124,6 +124,7 @@ const Navbar = () => {
                       <p className="text-sm font-medium text-gray-700 truncate">{user?.username}</p>
                       <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                     </div>
+                    {/* TEMPORALMENTE DESHABILITADO - Mi perfil
                     <Link
                       href="/perfil"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
@@ -131,6 +132,7 @@ const Navbar = () => {
                     >
                       Mi perfil
                     </Link>
+                    */}
                     {/* Debug info */}
                     <div className="px-4 py-2 text-xs text-gray-500 border-t border-gray-100">
                       Rol: {user?.role || 'undefined'}
@@ -232,6 +234,7 @@ const Navbar = () => {
             
             {isAuthenticated && (
               <>
+                {/* TEMPORALMENTE DESHABILITADO - Mi perfil
                 <Link
                   href="/perfil"
                   className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
@@ -239,6 +242,7 @@ const Navbar = () => {
                 >
                   Mi perfil
                 </Link>
+                */}
                 {(user?.role === 'admin' || user?.role === 'superadmin') && (
                   <Link
                     href="/admin"
