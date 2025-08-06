@@ -50,18 +50,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        console.log('🔄 Inicializando autenticación...');
+        console.log('🔍 Token en localStorage:', apiService.getToken() ? 'EXISTE' : 'NO EXISTE');
+        
         if (apiService.isAuthenticated()) {
-          const isValid = await apiService.verifyToken();
-          if (isValid) {
-            const userData = await apiService.getProfile();
-            setUser(userData.user);
-          } else {
-            apiService.removeToken();
+          console.log('✅ Token encontrado, verificando validez...');
+          try {
+            const isValid = await apiService.verifyToken();
+            console.log('🔍 Token válido:', isValid);
+            
+            if (isValid) {
+              console.log('📝 Obteniendo perfil del usuario...');
+              const userData = await apiService.getProfile();
+              console.log('👤 Usuario obtenido:', userData.user);
+              setUser(userData.user);
+              console.log('✅ Usuario establecido en context');
+            } else {
+              console.log('❌ Token no válido, eliminando...');
+              apiService.removeToken();
+              setUser(null);
+            }
+          } catch (profileError) {
+            console.error('❌ Error al obtener perfil:', profileError);
+            // No eliminar el token inmediatamente, solo si es un error de autenticación
+            if ((profileError as any)?.message?.includes('401') || (profileError as any)?.message?.includes('Token')) {
+              console.log('🔐 Error de autenticación, eliminando token');
+              apiService.removeToken();
+              setUser(null);
+            } else {
+              console.log('🔄 Error temporal, manteniendo token para próximo intento');
+              // Intentar una vez más en caso de error de red
+              setTimeout(() => {
+                initializeAuth();
+              }, 2000);
+              return;
+            }
           }
+        } else {
+          console.log('❌ No hay token, usuario no autenticado');
+          setUser(null);
         }
       } catch (error) {
-        console.error('Error al inicializar autenticación:', error);
-        apiService.removeToken();
+        console.error('❌ Error al inicializar autenticación:', error);
+        // Solo eliminar token si es claramente un error de autenticación
+        if ((error as any)?.message?.includes('401') || (error as any)?.message?.includes('Token')) {
+          apiService.removeToken();
+          setUser(null);
+        }
       } finally {
         setIsLoading(false);
       }

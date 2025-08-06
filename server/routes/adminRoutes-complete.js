@@ -10,14 +10,19 @@ const {
     getAdminStats,
     getUserStats,
     updateDatasetStatus,
-    deleteDataset
+    deleteDataset,
+    getAllLabels,
+    downloadLabelsCSV,
+    downloadLabeledSeriesCSV
 } = require('../controllers/adminController-fixed');
 const { verifyToken } = require('../middlewares/auth');
+const { requireAdmin } = require('../middlewares/adminAuth');
 
 const router = express.Router();
 
-// Todas las rutas requieren autenticación
+// Todas las rutas requieren autenticación y permisos de admin
 router.use(verifyToken);
+router.use(requireAdmin);
 
 // Rutas de datasets
 router.post('/upload-csv', uploadDatasetFromCSV);
@@ -37,5 +42,10 @@ router.delete('/users/:userId/assignments/:datasetId', removeDatasetAssignment);
 
 // Estadísticas
 router.get('/stats', getAdminStats);
+
+// Rutas de evaluaciones
+router.get('/labels', getAllLabels);
+router.get('/labels/download-csv', downloadLabelsCSV);
+router.get('/labels/:labelId/download-series-csv', downloadLabeledSeriesCSV);
 
 module.exports = router;

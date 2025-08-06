@@ -22,21 +22,27 @@ const getAvailableDatasets = async (req, res) => {
 // Obtener dataset por ID
 const getDatasetById = async (req, res) => {
     try {
+        console.log('🔍 getDatasetById llamado con ID:', req.params.id);
+        console.log('🔍 Headers de la request:', req.headers.authorization ? 'Con auth' : 'Sin auth');
+        
         const dataset = await Dataset.findById(req.params.id);
         
         if (!dataset) {
+            console.log('❌ Dataset no encontrado para ID:', req.params.id);
             return res.status(404).json({
                 success: false,
                 message: 'Dataset no encontrado'
             });
         }
         
+        console.log('✅ Dataset encontrado:', dataset.name);
+        
         res.json({
             success: true,
             dataset
         });
     } catch (error) {
-        console.error('Error al obtener dataset:', error);
+        console.error('❌ Error al obtener dataset:', error);
         res.status(500).json({
             success: false,
             message: 'Error interno del servidor'

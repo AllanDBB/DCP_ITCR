@@ -4,6 +4,7 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const Dataset = require('../models/dataset');
 const User = require('../models/user');
+const Label = require('../models/label');
 
 // Configuración de multer para subir archivos
 const storage = multer.diskStorage({
@@ -562,6 +563,82 @@ const getUserStats = async (req, res) => {
     }
 };
 
+// Función para obtener todas las evaluaciones (admin)
+const getAllLabels = async (req, res) => {
+    try {
+        console.log('🔍 getAllLabels - Usuario que hace la request:', req.user?.username);
+        console.log('🔍 getAllLabels - Role del usuario:', req.user?.role);
+        console.log('🔍 getAllLabels - Query params:', req.query);
+        
+        const { limit = 50, page = 1, userId, datasetId, status } = req.query;
+        
+        // Construir filtros
+        const filters = {};
+        if (userId) filters.userId = userId;
+        if (datasetId) filters.datasetId = datasetId;
+        if (status) filters.status = status;
+        
+        console.log('🔍 getAllLabels - Filtros aplicados:', filters);
+        
+        // Calcular skip para paginación
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        
+        // Obtener evaluaciones con información poblada
+        const labels = await Label.find(filters)
+            .populate({
+                path: 'userId',
+                select: 'username email'
+            })
+            .populate({
+                path: 'datasetId',
+                select: 'name description category difficulty'
+            })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
+        
+        // Contar total para paginación
+        const total = await Label.countDocuments(filters);
+        
+        console.log('✅ getAllLabels - Evaluaciones encontradas:', labels.length);
+        console.log('✅ getAllLabels - Total en BD:', total);
+        
+        const responseData = {
+            success: true,
+            data: {
+                labels,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total,
+                    pages: Math.ceil(total / parseInt(limit))
+                }
+            }
+        };
+        
+        console.log('📤 getAllLabels - Enviando respuesta con estructura:', {
+            success: responseData.success,
+            dataKeys: Object.keys(responseData.data),
+            labelsCount: responseData.data.labels.length,
+            paginationKeys: Object.keys(responseData.data.pagination)
+        });
+        
+        res.status(200).json(responseData);
+        
+    } catch (error) {
+        console.error('❌ Error en getAllLabels:', error);
+        console.error('❌ Stack trace:', error.stack);
+        
+        const errorResponse = {
+            success: false,
+            message: 'Error interno del servidor'
+        };
+        
+        console.log('📤 getAllLabels - Enviando error:', errorResponse);
+        res.status(500).json(errorResponse);
+    }
+};
+
 module.exports = {
     upload,
     uploadDatasetFromCSV,
@@ -573,5 +650,6 @@ module.exports = {
     assignDatasetToUser,
     removeDatasetAssignment,
     updateUserRole,
-    getUserStats
+    getUserStats,
+    getAllLabels
 }; 

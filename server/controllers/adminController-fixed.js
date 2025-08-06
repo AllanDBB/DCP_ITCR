@@ -651,6 +651,331 @@ const deleteDataset = async (req, res) => {
     }
 };
 
+// Función para obtener todas las evaluaciones (admin)
+const getAllLabels = async (req, res) => {
+    try {
+        const Label = require('../models/label');
+        console.log('🔍 getAllLabels - Usuario que hace la request:', req.user?.username);
+        console.log('🔍 getAllLabels - Role del usuario:', req.user?.role);
+        console.log('🔍 getAllLabels - Query params:', req.query);
+        
+        const { limit = 50, page = 1, userId, datasetId, status } = req.query;
+        
+        // Construir filtros
+        const filters = {};
+        if (userId) filters.userId = userId;
+        if (datasetId) filters.datasetId = datasetId;
+        if (status) filters.status = status;
+        
+        console.log('🔍 getAllLabels - Filtros aplicados:', filters);
+        
+        // Calcular skip para paginación
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        
+        // Obtener evaluaciones con información poblada
+        const labels = await Label.find(filters)
+            .populate({
+                path: 'userId',
+                select: 'username email'
+            })
+            .populate({
+                path: 'datasetId',
+                select: 'name description category difficulty'
+            })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
+        
+        // Contar total para paginación
+        const total = await Label.countDocuments(filters);
+        
+        console.log('✅ getAllLabels - Evaluaciones encontradas:', labels.length);
+        console.log('✅ getAllLabels - Total en BD:', total);
+        
+        const responseData = {
+            success: true,
+            data: {
+                labels,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total,
+                    pages: Math.ceil(total / parseInt(limit))
+                }
+            }
+        };
+        
+        console.log('📤 getAllLabels - Enviando respuesta con estructura:', {
+            success: responseData.success,
+            dataKeys: Object.keys(responseData.data),
+            labelsCount: responseData.data.labels.length,
+            paginationKeys: Object.keys(responseData.data.pagination)
+        });
+        
+        res.status(200).json(responseData);
+        
+    } catch (error) {
+        console.error('❌ Error en getAllLabels:', error);
+        console.error('❌ Stack trace:', error.stack);
+        
+        const errorResponse = {
+            success: false,
+            message: 'Error interno del servidor'
+        };
+        
+        console.log('📤 getAllLabels - Enviando error:', errorResponse);
+        res.status(500).json(errorResponse);
+    }
+};
+
+// Función para descargar evaluaciones en formato CSV
+const downloadLabelsCSV = async (req, res) => {
+    try {
+        const Label = require('../models/label');
+        console.log('📥 downloadLabelsCSV - Usuario que solicita descarga:', req.user?.username);
+        console.log('📥 downloadLabelsCSV - Query params:', req.query);
+        
+        const { userId, datasetId, status } = req.query;
+        
+        // Construir filtros
+        const filters = {};
+        if (userId) filters.userId = userId;
+        if (datasetId) filters.datasetId = datasetId;
+        if (status) filters.status = status;
+        
+        console.log('📥 downloadLabelsCSV - Filtros aplicados:', filters);
+        
+        // Obtener todas las evaluaciones (sin paginación para la descarga)
+        const labels = await Label.find(filters)
+            .populate({
+                path: 'userId',
+                select: 'username email'
+            })
+            .populate({
+                path: 'datasetId',
+                select: 'name description category difficulty expectedChangePoints'
+            })
+            .sort({ createdAt: -1 });
+        
+        console.log('📥 downloadLabelsCSV - Evaluaciones encontradas:', labels.length);
+        
+        if (labels.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontraron evaluaciones para descargar'
+            });
+        }
+        
+        // Generar contenido CSV
+        const csvHeaders = [
+            'ID_Evaluacion',
+            'Usuario',
+            'Email_Usuario',
+            'Dataset',
+            'Descripcion_Dataset',
+            'Categoria_Dataset',
+            'Dificultad_Dataset',
+            'ChangePoints_Esperados',
+            'Estado_Evaluacion',
+            'Sin_ChangePoints',
+            'Numero_ChangePoints_Encontrados',
+            'ChangePoints_Posiciones',
+            'ChangePoints_Tipos',
+            'ChangePoints_Confidencias',
+            'ChangePoints_Notas',
+            'Confianza_General',
+            'Tiempo_Gastado_Segundos',
+            'Tiempo_Gastado_Minutos',
+            'Fecha_Creacion',
+            'Fecha_Actualizacion',
+            'Notas_Revision'
+        ];
+        
+        const csvRows = labels.map(label => {
+            const changePointsPositions = label.changePoints.map(cp => cp.position).join(';');
+            const changePointsTypes = label.changePoints.map(cp => cp.type).join(';');
+            const changePointsConfidences = label.changePoints.map(cp => cp.confidence).join(';');
+            const changePointsNotes = label.changePoints.map(cp => cp.notes.replace(/[,;\n\r]/g, ' ')).join(';');
+            
+            return [
+                label._id,
+                label.userId?.username || 'N/A',
+                label.userId?.email || 'N/A',
+                label.datasetId?.name || 'N/A',
+                `"${(label.datasetId?.description || 'N/A').replace(/"/g, '""')}"`,
+                label.datasetId?.category || 'N/A',
+                label.datasetId?.difficulty || 'N/A',
+                label.datasetId?.expectedChangePoints || 0,
+                label.status,
+                label.noChangePoints,
+                label.changePoints.length,
+                `"${changePointsPositions}"`,
+                `"${changePointsTypes}"`,
+                `"${changePointsConfidences}"`,
+                `"${changePointsNotes}"`,
+                label.confidence,
+                label.timeSpent,
+                Math.round(label.timeSpent / 60),
+                label.createdAt.toISOString(),
+                label.updatedAt.toISOString(),
+                `"${(label.reviewNotes || '').replace(/"/g, '""')}"`
+            ];
+        });
+        
+        // Combinar headers y rows
+        const csvContent = [csvHeaders.join(','), ...csvRows.map(row => row.join(','))].join('\n');
+        
+        // Generar nombre de archivo con timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `evaluaciones_dcp_${timestamp}.csv`;
+        
+        console.log('📥 downloadLabelsCSV - Archivo generado:', filename);
+        console.log('📥 downloadLabelsCSV - Tamaño del CSV:', csvContent.length, 'caracteres');
+        
+        // Configurar headers para descarga
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Cache-Control', 'no-cache');
+        
+        // Enviar CSV con BOM para compatibilidad con Excel
+        res.send('\uFEFF' + csvContent);
+        
+        console.log('✅ downloadLabelsCSV - Descarga completada exitosamente');
+        
+    } catch (error) {
+        console.error('❌ Error en downloadLabelsCSV:', error);
+        console.error('❌ Stack trace:', error.stack);
+        
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor al generar CSV'
+        });
+    }
+};
+
+// Función para descargar una serie etiquetada individual en CSV
+const downloadLabeledSeriesCSV = async (req, res) => {
+    try {
+        const Label = require('../models/label');
+        const { labelId } = req.params;
+        
+        console.log('📥 downloadLabeledSeriesCSV - Usuario que solicita descarga:', req.user?.username);
+        console.log('📥 downloadLabeledSeriesCSV - Label ID:', labelId);
+        
+        if (!labelId) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID de evaluación requerido'
+            });
+        }
+        
+        // Obtener la evaluación específica con información poblada
+        const label = await Label.findById(labelId)
+            .populate({
+                path: 'userId',
+                select: 'username email'
+            })
+            .populate({
+                path: 'datasetId',
+                select: 'name description data'
+            });
+        
+        if (!label) {
+            return res.status(404).json({
+                success: false,
+                message: 'Evaluación no encontrada'
+            });
+        }
+        
+        console.log('📥 downloadLabeledSeriesCSV - Evaluación encontrada:', label._id);
+        console.log('📥 downloadLabeledSeriesCSV - Dataset:', label.datasetId?.name);
+        console.log('📥 downloadLabeledSeriesCSV - Change points:', label.changePoints.length);
+        
+        const dataset = label.datasetId;
+        const seriesData = dataset.data; // Array de [x, y] o [index, value]
+        
+        if (!seriesData || seriesData.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No hay datos en el dataset para descargar'
+            });
+        }
+        
+        // Crear un Set con las posiciones de change points para búsqueda rápida
+        const changePointPositions = new Set(label.changePoints.map(cp => cp.position));
+        
+        // Crear un mapa para obtener información detallada de cada change point
+        const changePointDetails = {};
+        label.changePoints.forEach(cp => {
+            changePointDetails[cp.position] = {
+                type: cp.type,
+                confidence: cp.confidence,
+                notes: cp.notes || ''
+            };
+        });
+        
+        // Generar headers del CSV
+        const csvHeaders = [
+            'Index',
+            'Value',
+            'Is_ChangePoint',
+            'ChangePoint_Type',
+            'ChangePoint_Confidence',
+            'ChangePoint_Notes'
+        ];
+        
+        // Generar filas del CSV
+        const csvRows = seriesData.map((point, index) => {
+            const x = point[0];
+            const y = point[1];
+            const isChangePoint = changePointPositions.has(index);
+            const cpDetails = changePointDetails[index];
+            
+            return [
+                index,
+                y,
+                isChangePoint ? 'TRUE' : 'FALSE',
+                isChangePoint ? cpDetails?.type || '' : '',
+                isChangePoint ? cpDetails?.confidence || '' : '',
+                isChangePoint ? `"${(cpDetails?.notes || '').replace(/"/g, '""')}"` : ''
+            ];
+        });
+        
+        // Combinar headers y rows
+        const csvContent = [csvHeaders.join(','), ...csvRows.map(row => row.join(','))].join('\n');
+        
+        // Generar nombre de archivo
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const sanitizedDatasetName = dataset.name.replace(/[^a-zA-Z0-9\-_]/g, '_');
+        const sanitizedUsername = label.userId?.username?.replace(/[^a-zA-Z0-9\-_]/g, '_') || 'unknown';
+        const filename = `serie_etiquetada_${sanitizedUsername}_${sanitizedDatasetName}_${timestamp}.csv`;
+        
+        console.log('📥 downloadLabeledSeriesCSV - Archivo generado:', filename);
+        console.log('📥 downloadLabeledSeriesCSV - Puntos en la serie:', seriesData.length);
+        console.log('📥 downloadLabeledSeriesCSV - Change points marcados:', label.changePoints.length);
+        console.log('📥 downloadLabeledSeriesCSV - Tamaño del CSV:', csvContent.length, 'caracteres');
+        
+        // Configurar headers para descarga
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Cache-Control', 'no-cache');
+        
+        // Enviar CSV con BOM para compatibilidad con Excel
+        res.send('\uFEFF' + csvContent);
+        
+        console.log('✅ downloadLabeledSeriesCSV - Descarga completada exitosamente');
+        
+    } catch (error) {
+        console.error('❌ Error en downloadLabeledSeriesCSV:', error);
+        console.error('❌ Stack trace:', error.stack);
+        
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor al generar CSV de serie etiquetada'
+        });
+    }
+};
+
 module.exports = {
     uploadDatasetFromCSV,
     uploadMultipleDatasetsFromCSV,
@@ -662,5 +987,8 @@ module.exports = {
     assignDatasetToUser,
     removeDatasetAssignment,
     updateUserRole,
-    getUserStats
+    getUserStats,
+    getAllLabels,
+    downloadLabelsCSV,
+    downloadLabeledSeriesCSV
 };

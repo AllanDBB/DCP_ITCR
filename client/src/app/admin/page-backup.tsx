@@ -549,7 +549,7 @@ export default function AdminPage() {
                             >
                               ✏️ Editar
                             </button>
-                            {user.role === 'superadmin' && (
+                            {user?.role === 'superadmin' && (
                               <button
                                 onClick={() => handleDeleteDataset(dataset._id)}
                                 className="px-3 py-1 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50"

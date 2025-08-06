@@ -23,6 +23,12 @@ interface AssignedDataset {
   status: 'pending' | 'in_progress' | 'completed';
   completedAt?: string;
   evaluationCount: number;
+  evaluationStatus?: 'draft' | 'completed' | null;
+  latestEvaluation?: {
+    status: 'draft' | 'completed';
+    createdAt: string;
+    updatedAt: string;
+  } | null;
 }
 
 export default function MyAssignedDatasetsPage() {
@@ -225,7 +231,20 @@ export default function MyAssignedDatasetsPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-black">Evaluaciones realizadas:</span>
-                    <span className="text-black">{assigned.evaluationCount}</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-black">{assigned.evaluationCount}</span>
+                      {assigned.evaluationStatus && (
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          assigned.evaluationStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                          assigned.evaluationStatus === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {assigned.evaluationStatus === 'completed' ? '✅ Completada' : 
+                           assigned.evaluationStatus === 'draft' ? '📝 Borrador' : 
+                           'Sin estado'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-black">Asignado:</span>
@@ -237,6 +256,14 @@ export default function MyAssignedDatasetsPage() {
                       <span className="text-black">{new Date(assigned.completedAt).toLocaleDateString()}</span>
                     </div>
                   )}
+                  {assigned.latestEvaluation && (
+                    <div className="flex justify-between">
+                      <span className="text-black">Última evaluación:</span>
+                      <span className="text-black text-xs">
+                        {new Date(assigned.latestEvaluation.updatedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-6 space-y-2">
@@ -245,7 +272,10 @@ export default function MyAssignedDatasetsPage() {
                       href={`/evaluador/manual?datasetId=${assigned.dataset._id}`}
                       className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-center block"
                     >
-                      {assigned.status === 'pending' ? 'Comenzar Evaluación' : 'Continuar Evaluación'}
+                      {assigned.evaluationCount === 0 ? 'Comenzar Evaluación' : 
+                       assigned.evaluationStatus === 'draft' ? 'Continuar Borrador' : 
+                       assigned.evaluationStatus === 'completed' ? 'Actualizar Evaluación' :
+                       'Continuar Evaluación'}
                     </Link>
                   )}
                   

@@ -310,7 +310,7 @@ class ApiService {
   // Métodos para etiquetas
   async createLabel(labelData: {
     datasetId: string;
-    sessionId: string;
+    sessionId?: string;
     changePoints: Array<{
       position: number;
       type: 'mean' | 'trend' | 'variance' | 'level';
@@ -338,11 +338,13 @@ class ApiService {
     page?: number;
     limit?: number;
     status?: string;
+    datasetId?: string;
   }): Promise<any> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.status) queryParams.append('status', params.status);
+    if (params?.datasetId) queryParams.append('datasetId', params.datasetId);
 
     const response = await this.request(`/labels?${queryParams}`);
     
@@ -351,6 +353,30 @@ class ApiService {
     }
     
     throw new Error(response.message || 'Error al obtener etiquetas');
+  }
+
+  async updateLabel(labelId: string, labelData: {
+    changePoints?: Array<{
+      position: number;
+      type: 'mean' | 'trend' | 'variance' | 'level';
+      confidence?: number;
+      notes?: string;
+    }>;
+    noChangePoints?: boolean;
+    confidence?: number;
+    timeSpent?: number;
+    status?: string;
+  }): Promise<any> {
+    const response = await this.request(`/labels/${labelId}`, {
+      method: 'PUT',
+      body: JSON.stringify(labelData),
+    });
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al actualizar etiqueta');
   }
 
   async getLabelStats(userId?: string): Promise<any> {
@@ -529,6 +555,77 @@ class ApiService {
     }
     
     throw new Error(response.message || 'Error al actualizar rol');
+  }
+
+  // Método para obtener todas las evaluaciones (admin)
+  async getAllLabels(params?: {
+    limit?: number;
+    page?: number;
+    userId?: string;
+    datasetId?: string;
+    status?: string;
+  }): Promise<any> {
+    const queryParams = params ? Object.entries(params)
+      .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+      .join('&') : '';
+    
+    const response = await this.request(`/admin/labels?${queryParams}`);
+    
+    if (response.success) {
+      return response;
+    }
+    
+    throw new Error(response.message || 'Error al obtener evaluaciones');
+  }
+
+  // Método para descargar evaluaciones en CSV (admin)
+  async downloadLabelsCSV(params?: {
+    userId?: string;
+    datasetId?: string;
+    status?: string;
+  }): Promise<Blob> {
+    const queryParams = params ? Object.entries(params)
+      .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+      .join('&') : '';
+    
+    const token = this.getToken();
+    
+    const response = await fetch(`${API_BASE_URL}/admin/labels/download-csv?${queryParams}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Error al descargar CSV' }));
+      throw new Error(errorData.message || 'Error al descargar evaluaciones en CSV');
+    }
+    
+    return response.blob();
+  }
+
+  // Método para descargar serie etiquetada individual en CSV (admin)
+  async downloadLabeledSeriesCSV(labelId: string): Promise<Blob> {
+    const token = this.getToken();
+    
+    const response = await fetch(`${API_BASE_URL}/admin/labels/${labelId}/download-series-csv`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Error al descargar serie etiquetada' }));
+      throw new Error(errorData.message || 'Error al descargar serie etiquetada en CSV');
+    }
+    
+    return response.blob();
   }
 
   // Métodos para usuarios - datasets asignados

@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const Dataset = require('../models/dataset');
 const User = require('../models/user');
+const Label = require('../models/label');
 
 // Obtener todos los datasets disponibles para etiquetado
 const getAvailableDatasets = async (req, res) => {
@@ -302,9 +303,45 @@ const getMyAssignedDatasets = async (req, res) => {
             assignedDatasets = assignedDatasets.filter(assigned => assigned.status === status);
         }
         
+        // Para cada dataset asignado, obtener información sobre evaluaciones existentes
+        const datasetsWithEvaluations = await Promise.all(
+            assignedDatasets.map(async (assignedDataset) => {
+                const datasetId = assignedDataset.dataset._id;
+                
+                // Contar evaluaciones del usuario para este dataset
+                const evaluationCount = await Label.countDocuments({
+                    userId: userId,
+                    datasetId: datasetId
+                });
+                
+                // Obtener la evaluación más reciente para conocer su estado
+                const latestEvaluation = await Label.findOne({
+                    userId: userId,
+                    datasetId: datasetId
+                }).sort({ createdAt: -1 });
+                
+                // Determinar el estado de la evaluación
+                let evaluationStatus = null;
+                if (latestEvaluation) {
+                    evaluationStatus = latestEvaluation.status || 'completed'; // Por defecto 'completed' si no tiene status
+                }
+                
+                return {
+                    ...assignedDataset.toObject(),
+                    evaluationCount,
+                    evaluationStatus,
+                    latestEvaluation: latestEvaluation ? {
+                        status: latestEvaluation.status || 'completed',
+                        createdAt: latestEvaluation.createdAt,
+                        updatedAt: latestEvaluation.updatedAt
+                    } : null
+                };
+            })
+        );
+        
         res.status(200).json({
             success: true,
-            data: assignedDatasets
+            data: datasetsWithEvaluations
         });
         
     } catch (error) {

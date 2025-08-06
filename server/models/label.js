@@ -14,7 +14,7 @@ const labelSchema = new mongoose.Schema({
     sessionId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'LabelingSession',
-        required: true
+        required: false // Hacer opcional para evaluaciones manuales
     },
     changePoints: [{
         position: {

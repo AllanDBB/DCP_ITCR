@@ -11,7 +11,8 @@ const {
     assignDatasetToUser,
     removeDatasetAssignment,
     updateUserRole,
-    getUserStats
+    getUserStats,
+    getAllLabels
 } = require('../controllers/adminController');
 const { verifyToken } = require('../middlewares/auth');
 const { requireAdmin, requireSuperAdmin } = require('../middlewares/adminAuth');
@@ -20,7 +21,7 @@ const router = express.Router();
 
 // Todas las rutas requieren autenticación y permisos de administrador
 router.use(verifyToken);
-// router.use(requireAdmin); // Temporalmente comentado para debuggear
+router.use(requireAdmin); // Re-habilitado para seguridad
 
 // Validaciones para subir dataset desde CSV
 const csvUploadValidation = [
@@ -116,6 +117,9 @@ router.get('/users/stats', getUserStats);
 router.post('/users/assign', assignDatasetValidation, assignDatasetToUser);
 router.delete('/users/:userId/assignments/:datasetId', removeDatasetAssignment);
 router.put('/users/:userId/role', updateRoleValidation, updateUserRole);
+
+// Rutas de administración - Evaluaciones
+router.get('/labels', getAllLabels);
 
 // Rutas que requieren superadmin
 router.delete('/datasets/:id', requireSuperAdmin, deleteDataset);

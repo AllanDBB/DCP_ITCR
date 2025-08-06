@@ -9,6 +9,7 @@ const createLabel = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+            console.log('❌ Errores de validación:', errors.array());
             return res.status(400).json({
                 success: false,
                 message: 'Errores de validación',
@@ -25,48 +26,67 @@ const createLabel = async (req, res) => {
             timeSpent
         } = req.body;
         
+        console.log('📝 Creando etiqueta con datos:', {
+            datasetId,
+            sessionId,
+            changePointsCount: changePoints?.length,
+            noChangePoints,
+            confidence,
+            timeSpent,
+            userId: req.userId
+        });
+        
         // Verificar que no exista ya una etiqueta para este usuario y dataset
         const existingLabel = await Label.findOne({
             datasetId,
             userId: req.userId,
-            sessionId
+            ...(sessionId && { sessionId }) // Solo incluir sessionId si existe
         });
         
         if (existingLabel) {
             return res.status(400).json({
                 success: false,
-                message: 'Ya existe una etiqueta para este dataset en esta sesión'
+                message: 'Ya existe una etiqueta para este dataset'
             });
         }
         
-        const newLabel = new Label({
+        const labelData = {
             datasetId,
             userId: req.userId,
-            sessionId,
             changePoints,
             noChangePoints,
             confidence,
-            timeSpent,
+            timeSpent: timeSpent || 0,
             status: 'completed'
-        });
+        };
         
+        // Solo agregar sessionId si está presente
+        if (sessionId) {
+            labelData.sessionId = sessionId;
+        }
+        
+        const newLabel = new Label(labelData);
         await newLabel.save();
         
-        // Actualizar la sesión de etiquetado
-        await LabelingSession.findByIdAndUpdate(sessionId, {
-            $inc: { completedDatasets: 1, totalTimeSpent: timeSpent },
-            $set: { 
-                [`datasets.${req.body.currentDatasetIndex}.status`]: 'completed',
-                [`datasets.${req.body.currentDatasetIndex}.endTime`]: new Date(),
-                [`datasets.${req.body.currentDatasetIndex}.timeSpent`]: timeSpent
-            }
-        });
+        console.log('✅ Etiqueta creada exitosamente:', newLabel._id);
+        
+        // Solo actualizar la sesión si existe sessionId
+        if (sessionId && req.body.currentDatasetIndex !== undefined) {
+            await LabelingSession.findByIdAndUpdate(sessionId, {
+                $inc: { completedDatasets: 1, totalTimeSpent: timeSpent || 0 },
+                $set: { 
+                    [`datasets.${req.body.currentDatasetIndex}.status`]: 'completed',
+                    [`datasets.${req.body.currentDatasetIndex}.endTime`]: new Date(),
+                    [`datasets.${req.body.currentDatasetIndex}.timeSpent`]: timeSpent || 0
+                }
+            });
+        }
         
         // Actualizar progreso del usuario
         await updateUserProgress(req.userId, {
             datasetsLabeled: 1,
-            changePointsLabeled: changePoints.length,
-            timeSpent: timeSpent
+            changePointsLabeled: changePoints?.length || 0,
+            timeSpent: timeSpent || 0
         });
         
         res.status(201).json({
@@ -76,10 +96,11 @@ const createLabel = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('Error al crear etiqueta:', error);
+        console.error('❌ Error al crear etiqueta:', error);
         res.status(500).json({
             success: false,
-            message: 'Error interno del servidor'
+            message: 'Error interno del servidor',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };
@@ -87,13 +108,18 @@ const createLabel = async (req, res) => {
 // Obtener etiquetas de un usuario
 const getUserLabels = async (req, res) => {
     try {
-        const { page = 1, limit = 10, status } = req.query;
+        const { page = 1, limit = 10, status, datasetId } = req.query;
         const skip = (parseInt(page) - 1) * parseInt(limit);
         
         const filters = { userId: req.userId };
         if (status) {
             filters.status = status;
         }
+        if (datasetId) {
+            filters.datasetId = datasetId;
+        }
+        
+        console.log('🔍 Buscando etiquetas con filtros:', filters);
         
         const labels = await Label.find(filters)
             .populate('datasetId', 'name description category difficulty')
@@ -103,6 +129,8 @@ const getUserLabels = async (req, res) => {
             .limit(parseInt(limit));
         
         const total = await Label.countDocuments(filters);
+        
+        console.log(`📋 Encontradas ${labels.length} etiquetas de ${total} total`);
         
         res.status(200).json({
             success: true,
@@ -189,7 +217,7 @@ const updateLabel = async (req, res) => {
         }
         
         // Solo permitir actualizar ciertos campos
-        const allowedUpdates = ['changePoints', 'noChangePoints', 'confidence', 'notes'];
+        const allowedUpdates = ['changePoints', 'noChangePoints', 'confidence', 'notes', 'status', 'timeSpent'];
         const filteredUpdates = {};
         
         allowedUpdates.forEach(field => {
@@ -197,6 +225,8 @@ const updateLabel = async (req, res) => {
                 filteredUpdates[field] = updateData[field];
             }
         });
+        
+        console.log('🔄 Actualizando etiqueta:', id, 'con datos:', filteredUpdates);
         
         const updatedLabel = await Label.findByIdAndUpdate(
             id,

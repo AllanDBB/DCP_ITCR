@@ -19,6 +19,7 @@ const labelValidation = [
         .withMessage('ID de dataset inválido'),
     
     body('sessionId')
+        .optional()
         .isMongoId()
         .withMessage('ID de sesión inválido'),
     

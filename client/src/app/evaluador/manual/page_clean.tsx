@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, Suspense } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/utils/api';
@@ -29,7 +29,7 @@ interface ChangePoint {
   tipo?: 'media' | 'tendencia';
 }
 
-function ManualEvaluationPage() {
+export default function ManualEvaluationPage() {
   const { user, isAuthenticated } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -48,10 +48,6 @@ function ManualEvaluationPage() {
   // Estado para el change point siendo editado
   const [editingChangePoint, setEditingChangePoint] = useState<number | null>(null);
   
-  // Estados para evaluación existente
-  const [existingEvaluation, setExistingEvaluation] = useState<any | null>(null);
-  const [evaluationStatus, setEvaluationStatus] = useState<'draft' | 'completed' | 'new'>('new');
-  
   // Estado para la paginación de la gráfica
   const [currentPage, setCurrentPage] = useState(1);
   const [pointsPerPage, setPointsPerPage] = useState(100);
@@ -61,9 +57,6 @@ function ManualEvaluationPage() {
   const [escalaY, setEscalaY] = useState(1);
   const [offsetY, setOffsetY] = useState(0);
   
-  // Estado para hover del mouse en la gráfica
-  const [hoverPosition, setHoverPosition] = useState<{x: number, index: number, mouseX?: number} | null>(null);
-  
   // Datos para la gráfica
   const [graphData, setGraphData] = useState<{index: number; value: number; date: string}[]>([]);
   
@@ -71,49 +64,6 @@ function ManualEvaluationPage() {
 
   // Cargar dataset cuando cambie el datasetId
   useEffect(() => {
-    // Función para cargar evaluación existente
-    const loadExistingEvaluation = async (datasetId: string, currentGraphData: any[]) => {
-      try {
-        console.log('🔍 Buscando evaluación existente para dataset:', datasetId);
-        
-        // Buscar evaluaciones del usuario para este dataset
-        const response = await apiService.getUserLabels({ datasetId });
-        
-        if (response && response.data && response.data.labels && response.data.labels.length > 0) {
-          const evaluation = response.data.labels[0]; // Tomar la primera evaluación
-          console.log('📋 Evaluación existente encontrada:', evaluation);
-          
-          setExistingEvaluation(evaluation);
-          setEvaluationStatus(evaluation.status || 'completed');
-          
-          // Cargar change points existentes
-          if (evaluation.changePoints && evaluation.changePoints.length > 0) {
-            const loadedChangePoints = evaluation.changePoints.map((cp: any) => ({
-              index: cp.position,
-              value: currentGraphData[cp.position]?.value || 0,
-              date: currentGraphData[cp.position]?.date || '',
-              tipo: cp.type === 'trend' ? 'tendencia' : 'media'
-            }));
-            
-            setChangePoints(loadedChangePoints);
-            setSinChangePoint(false);
-          } else if (evaluation.noChangePoints) {
-            setSinChangePoint(true);
-            setChangePoints([]);
-          }
-          
-          console.log('✅ Evaluación cargada exitosamente');
-        } else {
-          console.log('💡 No se encontró evaluación existente - nueva evaluación');
-          setEvaluationStatus('new');
-        }
-      } catch (error) {
-        console.error('⚠️ Error al cargar evaluación existente:', error);
-        // No es un error crítico, continuar con nueva evaluación
-        setEvaluationStatus('new');
-      }
-    };
-
     const loadDataset = async () => {
       if (!datasetId) {
         setError('No se especificó ID de dataset');
@@ -124,25 +74,9 @@ function ManualEvaluationPage() {
       try {
         setLoading(true);
         console.log('Cargando dataset:', datasetId);
-        console.log('=== DEBUG: Antes de llamar getDatasetById ===');
         const response = await apiService.getDatasetById(datasetId);
-        console.log('=== DEBUG: Response recibido ===');
-        console.log('Response completo:', response);
-        console.log('Response type:', typeof response);
-        console.log('Response.data:', response?.data);
-        console.log('Response.data type:', typeof response?.data);
+        const dataset = response.data;
         
-        if (!response) {
-          throw new Error('No se recibió respuesta del servidor');
-        }
-        
-        if (!response.dataset) {
-          console.error('=== ERROR: response.dataset es undefined ===');
-          console.error('Keys en response:', Object.keys(response || {}));
-          throw new Error('La respuesta del servidor no contiene datos del dataset');
-        }
-        
-        const dataset = response.dataset;
         console.log('Dataset cargado:', dataset);
         setCurrentDataset(dataset);
         
@@ -185,10 +119,6 @@ function ManualEvaluationPage() {
         setGraphData(formattedData);
         setTotalPages(Math.ceil(formattedData.length / pointsPerPage));
         setError(null);
-        
-        // Cargar evaluación existente si existe
-        await loadExistingEvaluation(datasetId, formattedData);
-        
       } catch (error: any) {
         console.error('Error al cargar dataset:', error);
         setError(error.message || 'Error al cargar el dataset');
@@ -207,7 +137,7 @@ function ManualEvaluationPage() {
     } else {
       setLoading(false);
     }
-  }, [datasetId, isAuthenticated, router, pointsPerPage]);
+  }, [datasetId, isAuthenticated, router]);
 
   // Actualizar páginas cuando cambie pointsPerPage
   useEffect(() => {
@@ -237,64 +167,6 @@ function ManualEvaluationPage() {
     }));
   };
 
-  // Manejar hover del mouse en la gráfica
-  const handleGraphMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
-    if (!graphRef.current || !currentDataset || sinChangePoint) {
-      setHoverPosition(null);
-      return;
-    }
-    
-    const svg = event.currentTarget;
-    const rect = svg.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const svgX = (x / rect.width) * 800;
-    
-    console.log('🖱️ Mouse move:', { x, svgX, rectWidth: rect.width });
-    
-    // Solo mostrar hover si está en el área de la gráfica
-    if (svgX >= 60 && svgX <= 740) {
-      const graphAreaWidth = 680;
-      const relativeX = svgX - 60;
-      const currentPageData = getCurrentPageData();
-      
-      // Encontrar el punto de datos más cercano al cursor
-      const clickRatio = relativeX / graphAreaWidth;
-      const exactFloatIndex = clickRatio * (currentPageData.length - 1);
-      const relativeIndex = Math.round(exactFloatIndex);
-      
-      const startIndex = (currentPage - 1) * pointsPerPage;
-      const absoluteIndex = startIndex + relativeIndex;
-      
-      console.log('🖱️ Mouse calculation:', {
-        relativeX,
-        clickRatio,
-        exactFloatIndex,
-        relativeIndex,
-        absoluteIndex,
-        currentPageDataLength: currentPageData.length
-      });
-      
-      if (absoluteIndex >= 0 && absoluteIndex < graphData.length && relativeIndex >= 0 && relativeIndex < currentPageData.length) {
-        // Usar la posición del mouse directamente para una mejor sincronización
-        // pero limitarla a los puntos de datos válidos
-        const snappedX = 60 + (relativeIndex / Math.max(1, currentPageData.length - 1)) * 680;
-        setHoverPosition({ 
-          x: snappedX, 
-          index: absoluteIndex,
-          mouseX: svgX // Guardar también la posición exacta del mouse
-        });
-      } else {
-        setHoverPosition(null);
-      }
-    } else {
-      setHoverPosition(null);
-    }
-  };
-
-  const handleGraphMouseLeave = () => {
-    setHoverPosition(null);
-  };
-
   // Manejar el evento de clic en la gráfica para marcar un CP
   const handleGraphClick = (event: React.MouseEvent<SVGSVGElement>) => {
     if (!graphRef.current || !currentDataset || sinChangePoint) return;
@@ -306,60 +178,32 @@ function ManualEvaluationPage() {
     // Convertir coordenadas del navegador a coordenadas del SVG
     const svgX = (x / rect.width) * 800; // 800 es el ancho del viewBox
     
-    console.log('🔍 Click coordinates:', { x, svgX, rectWidth: rect.width });
-    
     // Verificar que el clic esté en el área de la gráfica (entre x=60 y x=740)
-    if (svgX < 60 || svgX > 740) {
-      console.log('❌ Click outside graph area');
-      return;
-    }
+    if (svgX < 60 || svgX > 740) return;
     
     // Calcular el índice basado en la posición dentro del área de la gráfica
     const graphAreaWidth = 680; // 740 - 60
     const relativeX = svgX - 60; // Posición relativa al inicio del área de la gráfica
-    const currentPageData = getCurrentPageData();
+    const relativeIndex = Math.round((relativeX / graphAreaWidth) * (getCurrentPageData().length - 1));
     
-    // En lugar de interpolar, encontrar el punto de datos más cercano al clic
-    const clickRatio = relativeX / graphAreaWidth;
-    const exactFloatIndex = clickRatio * (currentPageData.length - 1);
-    const relativeIndex = Math.round(exactFloatIndex); // Redondear al punto más cercano
-    
-    // Calcular el índice absoluto en el dataset completo
+    // Calcular el índice en el dataset completo
     const startIndex = (currentPage - 1) * pointsPerPage;
-    const absoluteIndex = startIndex + relativeIndex;
-    
-    console.log('🔍 Index calculation:', {
-      relativeX,
-      graphAreaWidth,
-      clickRatio,
-      exactFloatIndex,
-      currentPageDataLength: currentPageData.length,
-      relativeIndex,
-      startIndex,
-      absoluteIndex,
-      totalDataLength: graphData.length,
-      actualDataPoint: currentPageData[relativeIndex]
-    });
+    const clickedIndex = startIndex + relativeIndex;
     
     // Verificar que el índice esté dentro del rango válido
-    if (absoluteIndex >= 0 && absoluteIndex < graphData.length && relativeIndex >= 0 && relativeIndex < currentPageData.length) {
+    if (clickedIndex >= 0 && clickedIndex < graphData.length && relativeIndex >= 0 && relativeIndex < getCurrentPageData().length) {
       // Verificar si ya existe un change point en un rango cercano (evitar duplicados)
       const nearby = changePoints.find(cp => 
-        Math.abs(cp.index - absoluteIndex) < 1 // Reducir la tolerancia para ser más preciso
+        Math.abs(cp.index - clickedIndex) < 3
       );
 
       if (nearby) {
-        console.log('🗑️ Removing existing change point at:', nearby.index);
         // Eliminar el change point existente si se hace clic cerca
         setChangePoints(changePoints.filter(cp => cp.index !== nearby.index));
       } else {
-        console.log('✨ Creating new change point at index:', absoluteIndex);
-        console.log('📍 Data point value:', currentPageData[relativeIndex]);
         // Mostrar panel para seleccionar tipo de change point
-        setEditingChangePoint(absoluteIndex);
+        setEditingChangePoint(clickedIndex);
       }
-    } else {
-      console.log('❌ Invalid index:', { absoluteIndex, relativeIndex, validRange: [0, graphData.length - 1] });
     }
   };
 
@@ -367,39 +211,31 @@ function ManualEvaluationPage() {
   const addChangePointWithType = (tipo: 'media' | 'tendencia') => {
     if (editingChangePoint === null) return;
     
-    console.log('🔍 Adding change point:', { editingChangePoint, tipo });
-    
-    // Encontrar el valor correcto del punto en el dataset completo
+    // Encontrar el valor correcto del punto
     const pointData = graphData.find(point => point.index === editingChangePoint);
-    
-    if (!pointData) {
-      console.error('❌ No se encontró data para el índice:', editingChangePoint);
-      return;
-    }
+    const value = pointData ? pointData.value : 50; // Valor por defecto si no se encuentra
+    const date = pointData ? pointData.date : '';
     
     const newCP = {
       index: editingChangePoint,
-      date: pointData.date,
-      value: pointData.value,
+      date: date,
+      value: value,
       tipo
     };
-    
-    console.log('✅ New change point created:', newCP);
     
     setChangePoints([...changePoints, newCP]);
     setEditingChangePoint(null);
   };
 
   // Función para guardar la evaluación
-  const handleSaveEvaluation = async (status: 'draft' | 'completed' = 'completed') => {
+  const handleSaveEvaluation = async () => {
     if (!currentDataset) return;
     
     try {
-      console.log('🚀 Iniciando guardado de evaluación...');
-      
       // Preparar los datos para enviar al backend
       const labelData = {
         datasetId: currentDataset._id,
+        sessionId: `manual_${Date.now()}`, // Generar un sessionId único
         changePoints: sinChangePoint ? [] : changePoints.map(cp => ({
           position: cp.index,
           type: (cp.tipo === 'tendencia' ? 'trend' : 'mean') as 'mean' | 'trend' | 'variance' | 'level',
@@ -408,59 +244,26 @@ function ManualEvaluationPage() {
         })),
         noChangePoints: sinChangePoint,
         confidence: 0.8, // Confianza por defecto para evaluación manual
-        timeSpent: Math.floor(Date.now() / 1000), // Tiempo aproximado en segundos
-        status: status, // Estado de la evaluación
-        // Remover sessionId y currentDatasetIndex ya que son opcionales y causan problemas
+        timeSpent: Math.floor(Date.now() / 1000), // Tiempo aproximado
+        currentDatasetIndex: 0
       };
 
-      console.log('📋 Datos de evaluación preparados:', labelData);
-      console.log('📊 Change points a enviar:', labelData.changePoints);
+      console.log('Guardando evaluación:', labelData);
       
-      let response;
-      if (existingEvaluation && status === 'completed') {
-        // Si ya existe una evaluación, actualizarla
-        response = await apiService.updateLabel(existingEvaluation._id, labelData);
-        console.log('🔄 Evaluación actualizada:', response);
-      } else {
-        // Crear nueva evaluación
-        response = await apiService.createLabel(labelData);
-        console.log('✅ Nueva evaluación creada:', response);
-      }
-      
-      // Actualizar estado local
-      setExistingEvaluation(response.data);
-      setEvaluationStatus(status);
+      // Llamar al API para guardar la evaluación
+      await apiService.createLabel(labelData);
       
       // Mostrar mensaje de éxito
-      const actionMessage = existingEvaluation && status === 'completed' ? 'actualizada' : 
-                           status === 'draft' ? 'guardada como borrador' : 'finalizada';
-      
       alert(sinChangePoint ? 
-        `Serie "${currentDataset.name}" marcada como sin change points y ${actionMessage}` :
-        `${changePoints.length} change points para "${currentDataset.name}" ${actionMessage}`);
+        `Serie "${currentDataset.name}" marcada como sin change points` :
+        `Guardados ${changePoints.length} change points para "${currentDataset.name}"`);
       
-      // Solo redirigir si se completa la evaluación
-      if (status === 'completed') {
-        router.push('/evaluador/mis-datasets');
-      }
+      // Redirigir de vuelta a la lista de datasets
+      router.push('/evaluador/mis-datasets');
       
     } catch (error: any) {
-      console.error('❌ Error al guardar evaluación:', error);
-      console.error('❌ Error details:', error.response?.data);
-      
-      let errorMessage = 'Error al guardar la evaluación';
-      
-      if (error.response?.data?.errors) {
-        // Si hay errores de validación específicos
-        const validationErrors = error.response.data.errors.map((err: any) => err.msg).join(', ');
-        errorMessage = `Errores de validación: ${validationErrors}`;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      alert(errorMessage);
+      console.error('Error al guardar evaluación:', error);
+      alert('Error al guardar la evaluación: ' + (error.message || 'Error desconocido'));
     }
   };
 
@@ -563,7 +366,6 @@ function ManualEvaluationPage() {
         description={currentDataset.description}
         expectedChangePoints={currentDataset.expectedChangePoints}
         currentChangePoints={changePoints.length}
-        user={user || undefined}
         onBack={() => router.push('/evaluador/mis-datasets')}
       />
       
@@ -601,35 +403,10 @@ function ManualEvaluationPage() {
               <p className="text-2xl font-bold text-green-600">{changePoints.length}</p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-800">Estado Evaluación</h3>
-              <p className={`text-2xl font-bold ${
-                evaluationStatus === 'completed' ? 'text-green-600' :
-                evaluationStatus === 'draft' ? 'text-yellow-600' :
-                'text-purple-600'
-              }`}>
-                {evaluationStatus === 'completed' ? '✅ Completada' :
-                 evaluationStatus === 'draft' ? '📝 Borrador' :
-                 '🆕 Nueva'}
-              </p>
+              <h3 className="text-lg font-semibold text-gray-800">Página Actual</h3>
+              <p className="text-2xl font-bold text-purple-600">{currentPage} de {totalPages}</p>
             </div>
           </div>
-          
-          {/* Mensaje informativo sobre evaluación existente */}
-          {existingEvaluation && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-blue-800 font-medium">
-                  Se encontró una evaluación previa para este dataset.
-                </span>
-              </div>
-              <p className="text-blue-700 text-sm mt-1 ml-7">
-                Los change points marcados previamente han sido cargados. Puedes modificarlos y guardar como borrador o finalizar la evaluación.
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Controles superiores */}
@@ -728,9 +505,6 @@ function ManualEvaluationPage() {
                       <span className="text-sm font-medium text-gray-700">
                         Punto {cp.index}
                       </span>
-                      <span className="text-xs text-gray-500">
-                        Valor: {cp.value?.toFixed(2)}
-                      </span>
                       {cp.tipo && (
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           cp.tipo === 'media' ? 'bg-blue-100 text-blue-800' :
@@ -742,10 +516,9 @@ function ManualEvaluationPage() {
                     </div>
                     <button
                       onClick={() => setChangePoints(changePoints.filter(point => point.index !== cp.index))}
-                      className="text-red-500 hover:text-red-700 text-sm font-medium px-2 py-1 rounded hover:bg-red-50"
-                      title={`Eliminar change point en posición ${cp.index}`}
+                      className="text-red-500 hover:text-red-700 text-sm"
                     >
-                      ✕
+                      Eliminar
                     </button>
                   </div>
                 ))}
@@ -775,8 +548,6 @@ function ManualEvaluationPage() {
               viewBox="0 0 800 400" 
               className="border rounded bg-gradient-to-b from-gray-50 to-white cursor-crosshair"
               onClick={handleGraphClick}
-              onMouseMove={handleGraphMouseMove}
-              onMouseLeave={handleGraphMouseLeave}
             >
               {/* Definir gradientes */}
               <defs>
@@ -869,107 +640,37 @@ function ManualEvaluationPage() {
                 const scaledValue = normalizedValue * escalaY;
                 const y = Math.max(40, Math.min(350, 350 - (scaledValue * 310) + offsetY));
                 
-                // Verificar si este punto está siendo señalado por el hover
-                const startIndex = (currentPage - 1) * pointsPerPage;
-                const absoluteIndex = startIndex + index;
-                const isHovered = hoverPosition && hoverPosition.index === absoluteIndex;
-                
                 return (
                   <g key={index}>
-                    {/* Círculo de fondo expandido para hover */}
-                    {isHovered && (
-                      <circle 
-                        cx={x} 
-                        cy={y} 
-                        r="12" 
-                        fill="#10B981"
-                        opacity="0.2"
-                        className="animate-pulse"
-                      />
-                    )}
-                    {/* Círculo principal */}
                     <circle 
                       cx={x} 
                       cy={y} 
-                      r={isHovered ? "6" : "4"} 
-                      fill={isHovered ? "#FFFFFF" : "#FFFFFF"}
-                      stroke={isHovered ? "#059669" : "#3B82F6"}
-                      strokeWidth={isHovered ? "3" : "2"}
-                      className="transition-all duration-150 cursor-pointer"
+                      r="4" 
+                      fill="#FFFFFF"
+                      stroke="#3B82F6"
+                      strokeWidth="2"
+                      className="hover:r-6 transition-all duration-200 cursor-pointer"
                       filter="url(#shadow)"
                     />
-                    {/* Círculo interior */}
                     <circle 
                       cx={x} 
                       cy={y} 
-                      r={isHovered ? "3" : "2"} 
-                      fill={isHovered ? "#059669" : "#3B82F6"}
-                      className="pointer-events-none transition-all duration-150"
+                      r="2" 
+                      fill="#3B82F6"
+                      className="pointer-events-none"
                     />
-                    {/* Etiqueta del valor para punto hover */}
-                    {isHovered && (
-                      <g>
-                        <rect
-                          x={x - 25}
-                          y={y - 25}
-                          width="50"
-                          height="16"
-                          fill="#059669"
-                          rx="8"
-                          filter="url(#shadow)"
-                        />
-                        <text 
-                          x={x} 
-                          y={y - 13} 
-                          textAnchor="middle" 
-                          className="text-xs fill-white font-medium"
-                          fontFamily="system-ui"
-                        >
-                          {point.value.toFixed(1)}
-                        </text>
-                      </g>
-                    )}
                   </g>
                 );
               })}
                 
               {/* Change points marcados */}
               {getCurrentPageChangePoints().map((cp) => {
-                const currentPageData = getCurrentPageData();
-                const startIndex = (currentPage - 1) * pointsPerPage;
-                const relativeIndex = cp.index - startIndex;
-                
-                // Verificar que el change point está en la página actual
-                if (relativeIndex < 0 || relativeIndex >= currentPageData.length) {
-                  return null;
-                }
-                
-                // Calcular posición X exacta basada en el índice relativo
-                const x = 60 + (relativeIndex / Math.max(1, currentPageData.length - 1)) * 680;
-                
-                // Encontrar el punto de datos correspondiente en la página actual
-                const pointInCurrentPage = currentPageData[relativeIndex];
-                if (!pointInCurrentPage) {
-                  console.warn('⚠️ No se encontró punto de datos para relativeIndex:', relativeIndex);
-                  return null;
-                }
-                
-                // Calcular posición Y basada en el valor real del punto
-                const minValue = Math.min(...currentPageData.map(d => d.value));
-                const maxValue = Math.max(...currentPageData.map(d => d.value));
-                const normalizedValue = maxValue === minValue ? 0.5 : (pointInCurrentPage.value - minValue) / (maxValue - minValue);
+                const x = 60 + ((cp.relativeIndex || 0) / Math.max(1, getCurrentPageData().length - 1)) * 680;
+                const minValue = Math.min(...getCurrentPageData().map(d => d.value));
+                const maxValue = Math.max(...getCurrentPageData().map(d => d.value));
+                const normalizedValue = maxValue === minValue ? 0.5 : (cp.value - minValue) / (maxValue - minValue);
                 const scaledValue = normalizedValue * escalaY;
                 const y = Math.max(40, Math.min(350, 350 - (scaledValue * 310) + offsetY));
-                
-                console.log('🎯 Rendering change point:', {
-                  cpIndex: cp.index,
-                  startIndex,
-                  relativeIndex,
-                  x,
-                  y,
-                  value: pointInCurrentPage.value,
-                  pageDataLength: currentPageData.length
-                });
                 
                 const tipoColors = {
                   media: { fill: '#EF4444', stroke: '#DC2626', bg: '#FEE2E2' },
@@ -987,19 +688,19 @@ function ManualEvaluationPage() {
                       x2={x} 
                       y2="350" 
                       stroke={colors.fill} 
-                      strokeWidth="3" 
-                      strokeDasharray="6,4"
-                      opacity="0.8"
+                      strokeWidth="2" 
+                      strokeDasharray="5,3"
+                      opacity="0.7"
                     />
                     
                     {/* Círculo exterior */}
                     <circle 
                       cx={x} 
                       cy={y} 
-                      r="14" 
+                      r="12" 
                       fill={colors.bg} 
                       stroke={colors.stroke}
-                      strokeWidth="3"
+                      strokeWidth="2"
                       filter="url(#shadow)"
                     />
                     
@@ -1007,7 +708,7 @@ function ManualEvaluationPage() {
                     <circle 
                       cx={x} 
                       cy={y} 
-                      r="10" 
+                      r="8" 
                       fill={colors.fill} 
                       stroke="#FFFFFF"
                       strokeWidth="2"
@@ -1029,16 +730,16 @@ function ManualEvaluationPage() {
                       <g>
                         <rect
                           x={x - 25}
-                          y={y - 40}
+                          y={y - 35}
                           width="50"
-                          height="18"
+                          height="16"
                           fill={colors.fill}
-                          rx="9"
+                          rx="8"
                           filter="url(#shadow)"
                         />
                         <text 
                           x={x} 
-                          y={y - 28} 
+                          y={y - 26} 
                           textAnchor="middle" 
                           className="text-xs fill-white font-medium"
                           fontFamily="system-ui"
@@ -1047,80 +748,9 @@ function ManualEvaluationPage() {
                         </text>
                       </g>
                     )}
-                    
-                    {/* Etiqueta del índice */}
-                    <g>
-                      <rect
-                        x={x - 15}
-                        y={y + 20}
-                        width="30"
-                        height="16"
-                        fill="#374151"
-                        rx="8"
-                        filter="url(#shadow)"
-                      />
-                      <text 
-                        x={x} 
-                        y={y + 31} 
-                        textAnchor="middle" 
-                        className="text-xs fill-white font-medium"
-                        fontFamily="system-ui"
-                      >
-                        {cp.index}
-                      </text>
-                    </g>
                   </g>
                 );
               })}
-              
-              {/* Indicador de hover */}
-              {hoverPosition && !sinChangePoint && (
-                <g>
-                  {/* Línea vertical que sigue el mouse */}
-                  <line 
-                    x1={hoverPosition.mouseX || hoverPosition.x} 
-                    y1="40" 
-                    x2={hoverPosition.mouseX || hoverPosition.x} 
-                    y2="350" 
-                    stroke="#10B981" 
-                    strokeWidth="1" 
-                    strokeDasharray="3,3"
-                    opacity="0.6"
-                  />
-                  {/* Línea vertical del punto más cercano */}
-                  <line 
-                    x1={hoverPosition.x} 
-                    y1="40" 
-                    x2={hoverPosition.x} 
-                    y2="350" 
-                    stroke="#059669" 
-                    strokeWidth="2" 
-                    strokeDasharray="5,2"
-                    opacity="0.8"
-                  />
-                  {/* Etiqueta del índice */}
-                  <g>
-                    <rect
-                      x={hoverPosition.x - 20}
-                      y="15"
-                      width="40"
-                      height="18"
-                      fill="#059669"
-                      rx="9"
-                      filter="url(#shadow)"
-                    />
-                    <text 
-                      x={hoverPosition.x} 
-                      y="27" 
-                      textAnchor="middle" 
-                      className="text-xs fill-white font-medium"
-                      fontFamily="system-ui"
-                    >
-                      #{hoverPosition.index}
-                    </text>
-                  </g>
-                </g>
-              )}
               
               {/* Indicador de área clicable */}
               <rect 
@@ -1133,25 +763,11 @@ function ManualEvaluationPage() {
               />
             </svg>
             
-            {/* Instrucciones y estado */}
+            {/* Instrucciones */}
             <div className="absolute top-2 right-2 bg-white bg-opacity-95 p-3 rounded-lg text-xs text-gray-700 border shadow-sm">
-              <div className="space-y-1">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>Haga clic en la gráfica para marcar change points</span>
-                </div>
-                {hoverPosition && (
-                  <div className="flex items-center space-x-2 text-green-600">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span>Punto más cercano: #{hoverPosition.index}</span>
-                  </div>
-                )}
-                {changePoints.length > 0 && (
-                  <div className="flex items-center space-x-2 text-orange-600">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                    <span>{changePoints.length} CP(s) marcados</span>
-                  </div>
-                )}
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Haga clic en la gráfica para marcar change points</span>
               </div>
             </div>
             
@@ -1177,19 +793,6 @@ function ManualEvaluationPage() {
                 "Ha indicado que no hay change points en esta serie" :
                 `Total de change points marcados: ${changePoints.length}`
               }
-              {existingEvaluation && (
-                <div className="mt-1">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    evaluationStatus === 'completed' ? 'bg-green-100 text-green-800' :
-                    evaluationStatus === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-blue-100 text-blue-800'
-                  }`}>
-                    {evaluationStatus === 'completed' ? '✅ Evaluación Completada' :
-                     evaluationStatus === 'draft' ? '📝 Borrador' :
-                     '🆕 Nueva Evaluación'}
-                  </span>
-                </div>
-              )}
             </div>
             
             <div className="flex space-x-4">
@@ -1202,29 +805,12 @@ function ManualEvaluationPage() {
               >
                 Limpiar Todo
               </button>
-              
-              {/* Botón para guardar como borrador */}
-              {evaluationStatus !== 'completed' && (
-                <button
-                  onClick={() => handleSaveEvaluation('draft')}
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  disabled={!sinChangePoint && changePoints.length === 0}
-                  title="Guardar progreso sin finalizar"
-                >
-                  💾 Guardar Borrador
-                </button>
-              )}
-              
-              {/* Botón para finalizar evaluación */}
               <button
-                onClick={() => handleSaveEvaluation('completed')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                onClick={handleSaveEvaluation}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                 disabled={!sinChangePoint && changePoints.length === 0}
-                title={!sinChangePoint && changePoints.length === 0 ? 'Debe marcar al menos un change point o indicar que no hay ninguno' : 'Finalizar evaluación'}
               >
-                {existingEvaluation && evaluationStatus === 'completed' ? 
-                  '🔄 Actualizar Evaluación' : 
-                  '✅ Terminar Evaluación'}
+                Guardar Evaluación
               </button>
             </div>
           </div>
@@ -1324,13 +910,3 @@ function ManualEvaluationPage() {
     </div>
   );
 }
-
-function ManualEvaluationPageWrapper() {
-  return (
-    <Suspense fallback={<div>Cargando evaluación manual...</div>}>
-      <ManualEvaluationPage />
-    </Suspense>
-  );
-}
-
-export default ManualEvaluationPageWrapper;

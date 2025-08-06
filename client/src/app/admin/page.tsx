@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/utils/api';
 import { useRouter } from 'next/navigation';
@@ -45,14 +45,22 @@ interface UserStats {
 export default function AdminPageSimple() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'upload' | 'datasets' | 'users' | 'assignments'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'datasets' | 'users' | 'assignments' | 'evaluations'>('upload');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Debug logging para verificar usuario
+  console.log('🏠 AdminPageSimple - Estado del usuario:');
+  console.log('  🧑‍💼 Usuario:', user);
+  console.log('  🔑 Autenticado:', isAuthenticated);
+  console.log('  👮‍♂️ Rol:', user?.role);
+  console.log('  📧 Email:', user?.email);
   
   // Estados para datasets
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [evaluations, setEvaluations] = useState<any[]>([]);
   
   // Estados para formularios
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -66,6 +74,140 @@ export default function AdminPageSimple() {
     sampleData: any[];
   } | null>(null);
   const [uploadMode, setUploadMode] = useState<'single' | 'multiple'>('multiple');
+
+  const loadEvaluations = useCallback(async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Iniciando carga de evaluaciones...');
+      console.log('🧑‍💼 Usuario actual:', user);
+      console.log('🔑 Usuario autenticado:', isAuthenticated);
+      console.log('👮‍♂️ Rol del usuario:', user?.role);
+      
+      // Verificar que el usuario sea admin antes de hacer la llamada
+      if (!user || user.role !== 'admin') {
+        throw new Error('Usuario no tiene permisos de administrador');
+      }
+      
+      const response = await apiService.getAllLabels({ limit: 100 });
+      console.log('✅ Respuesta de evaluaciones:', response);
+      
+      setEvaluations(response.data?.labels || []);
+      console.log('📋 Evaluaciones cargadas:', response.data?.labels?.length || 0);
+      
+    } catch (error: any) {
+      console.error('❌ Error al cargar evaluaciones:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      
+      let errorMessage = 'Error al cargar evaluaciones';
+      if (error.message && error.message.includes('permisos de administrador')) {
+        errorMessage = 'Acceso denegado: Necesita permisos de administrador para ver las evaluaciones';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 403) {
+        errorMessage = 'No tienes permisos para ver las evaluaciones';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Tu sesión ha expirado. Por favor inicia sesión nuevamente';
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, isAuthenticated]);
+
+  // Función para descargar evaluaciones en CSV
+  const downloadEvaluationsCSV = useCallback(async () => {
+    try {
+      setLoading(true);
+      console.log('📥 Iniciando descarga de CSV...');
+      
+      // Verificar que el usuario sea admin antes de hacer la llamada
+      if (!user || user.role !== 'admin') {
+        throw new Error('Usuario no tiene permisos de administrador');
+      }
+      
+      const blob = await apiService.downloadLabelsCSV();
+      console.log('✅ CSV descargado exitosamente');
+      
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Generar nombre de archivo con timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.download = `evaluaciones_dcp_${timestamp}.csv`;
+      
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setMessage({ type: 'success', text: 'CSV descargado exitosamente' });
+      console.log('📁 Archivo descargado:', a.download);
+      
+    } catch (error: any) {
+      console.error('❌ Error al descargar CSV:', error);
+      
+      let errorMessage = 'Error al descargar CSV';
+      if (error.message && error.message.includes('permisos de administrador')) {
+        errorMessage = 'Acceso denegado: Necesita permisos de administrador para descargar evaluaciones';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Función para descargar serie etiquetada individual
+  const downloadLabeledSeries = useCallback(async (labelId: string, datasetName: string, username: string) => {
+    try {
+      console.log('📥 Iniciando descarga de serie etiquetada...', { labelId, datasetName, username });
+      
+      // Verificar que el usuario sea admin antes de hacer la llamada
+      if (!user || user.role !== 'admin') {
+        throw new Error('Usuario no tiene permisos de administrador');
+      }
+      
+      const blob = await apiService.downloadLabeledSeriesCSV(labelId);
+      console.log('✅ Serie etiquetada descargada exitosamente');
+      
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Generar nombre de archivo
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const sanitizedDataset = datasetName.replace(/[^a-zA-Z0-9\-_]/g, '_');
+      const sanitizedUsername = username.replace(/[^a-zA-Z0-9\-_]/g, '_');
+      a.download = `serie_etiquetada_${sanitizedUsername}_${sanitizedDataset}_${timestamp}.csv`;
+      
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setMessage({ type: 'success', text: `Serie etiquetada descargada: ${datasetName}` });
+      console.log('📁 Archivo descargado:', a.download);
+      
+    } catch (error: any) {
+      console.error('❌ Error al descargar serie etiquetada:', error);
+      
+      let errorMessage = 'Error al descargar serie etiquetada';
+      if (error.message && error.message.includes('permisos de administrador')) {
+        errorMessage = 'Acceso denegado: Necesita permisos de administrador';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
+    }
+  }, [user]);
 
   // Verificar autenticación y permisos
   useEffect(() => {
@@ -88,9 +230,11 @@ export default function AdminPageSimple() {
       } else if (activeTab === 'users') {
         loadUsers();
         loadUserStats();
+      } else if (activeTab === 'evaluations') {
+        loadEvaluations();
       }
     }
-  }, [activeTab, isAuthenticated, user]);
+  }, [activeTab, isAuthenticated, user, loadEvaluations]);
 
   const loadDatasets = async () => {
     try {
@@ -247,12 +391,59 @@ export default function AdminPageSimple() {
     }
   };
 
+  const handleDownloadEvaluation = async (evaluation: any) => {
+    try {
+      // Crear objeto con datos de la evaluación para descarga
+      const evaluationData = {
+        usuario: evaluation.userId?.username || 'Usuario desconocido',
+        email: evaluation.userId?.email || '',
+        dataset: evaluation.datasetId?.name || 'Dataset desconocido',
+        categoria: evaluation.datasetId?.category || '',
+        dificultad: evaluation.datasetId?.difficulty || '',
+        estado: evaluation.status || 'sin estado',
+        sinChangePoints: evaluation.noChangePoints || false,
+        changePoints: evaluation.changePoints || [],
+        confianza: evaluation.confidence || 0,
+        tiempoGastado: evaluation.timeSpent || 0,
+        fechaCreacion: evaluation.createdAt,
+        fechaActualizacion: evaluation.updatedAt
+      };
+
+      // Convertir a JSON y descargar
+      const dataStr = JSON.stringify(evaluationData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `evaluacion_${evaluation.userId?.username || 'usuario'}_${evaluation.datasetId?.name || 'dataset'}_${new Date().toISOString().split('T')[0]}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    } catch (error: any) {
+      setMessage({ type: 'error', text: 'Error al descargar evaluación' });
+    }
+  };
+
+  const handleViewEvaluation = (evaluation: any) => {
+    // Mostrar detalles de la evaluación en un alert por ahora
+    // En el futuro se puede implementar un modal más sofisticado
+    const details = `
+Evaluación de ${evaluation.userId?.username || 'Usuario desconocido'}
+Dataset: ${evaluation.datasetId?.name || 'Dataset desconocido'}
+Estado: ${evaluation.status || 'Sin estado'}
+${evaluation.noChangePoints ? 'Sin change points detectados' : `Change points encontrados: ${evaluation.changePoints?.length || 0}`}
+Confianza: ${evaluation.confidence || 0}
+Fecha: ${new Date(evaluation.createdAt).toLocaleString()}
+    `;
+    alert(details);
+  };
+
   if (!isAuthenticated || !user || user.role !== 'admin') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-black mb-4">Acceso Denegado</h1>
-          <p className="text-black">No tienes permisos para acceder a esta página.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Acceso Denegado</h1>
+          <p className="text-gray-800">No tienes permisos para acceder a esta página.</p>
         </div>
       </div>
     );
@@ -262,8 +453,8 @@ export default function AdminPageSimple() {
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-black">Panel de Administración</h1>
-          <p className="mt-2 text-black">Gestiona datasets, usuarios y asignaciones</p>
+          <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
+          <p className="mt-2 text-gray-700">Gestiona datasets, usuarios y asignaciones</p>
         </div>
 
         {/* Mensajes */}
@@ -284,20 +475,21 @@ export default function AdminPageSimple() {
         {/* Navegación de tabs */}
         <div className="mb-8">
           <nav className="flex space-x-8">
-            {['upload', 'datasets', 'users', 'assignments'].map((tab) => (
+            {['upload', 'datasets', 'users', 'assignments', 'evaluations'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-black hover:text-black'
+                    : 'border-transparent text-gray-700 hover:text-gray-900'
                 }`}
               >
                 {tab === 'upload' && 'Subir CSV'}
                 {tab === 'datasets' && 'Datasets'}
                 {tab === 'users' && 'Usuarios'}
                 {tab === 'assignments' && 'Asignaciones'}
+                {tab === 'evaluations' && 'Evaluaciones'}
               </button>
             ))}
           </nav>
@@ -306,10 +498,10 @@ export default function AdminPageSimple() {
         {/* Contenido de los tabs */}
         {activeTab === 'upload' && (
           <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-black">Subir Dataset desde CSV</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Subir Dataset desde CSV</h2>
             <form onSubmit={handleFileUpload} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-black mb-2">
+                <label className="block text-sm font-medium text-gray-800 mb-2">
                   Archivo CSV
                 </label>
                 <input
@@ -332,19 +524,19 @@ export default function AdminPageSimple() {
               {/* Preview del CSV */}
               {csvPreview && (
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-black mb-2">Análisis del archivo:</h3>
-                  <div className="space-y-2 text-sm text-black">
-                    <p className="text-black"><span className="font-medium">Columnas encontradas:</span> {csvPreview.columns.length}</p>
-                    <p className="text-black"><span className="font-medium">Series de tiempo detectadas:</span> {csvPreview.timeSeriesColumns.length}</p>
+                  <h3 className="font-medium text-gray-900 mb-2">Análisis del archivo:</h3>
+                  <div className="space-y-2 text-sm text-gray-800">
+                    <p className="text-gray-800"><span className="font-medium">Columnas encontradas:</span> {csvPreview.columns.length}</p>
+                    <p className="text-gray-800"><span className="font-medium">Series de tiempo detectadas:</span> {csvPreview.timeSeriesColumns.length}</p>
                     {csvPreview.timeSeriesColumns.length > 0 && (
-                      <p className="text-black"><span className="font-medium">Columnas de series:</span> {csvPreview.timeSeriesColumns.join(', ')}</p>
+                      <p className="text-gray-800"><span className="font-medium">Columnas de series:</span> {csvPreview.timeSeriesColumns.join(', ')}</p>
                     )}
                   </div>
 
                   {/* Selector de modo */}
                   {csvPreview.timeSeriesColumns.length > 1 && (
                     <div className="mt-4">
-                      <label className="block text-sm font-medium text-black mb-2">
+                      <label className="block text-sm font-medium text-gray-800 mb-2">
                         Modo de procesamiento:
                       </label>
                       <div className="space-y-2">
@@ -356,7 +548,7 @@ export default function AdminPageSimple() {
                             onChange={(e) => setUploadMode(e.target.value as 'multiple')}
                             className="mr-2"
                           />
-                          <span className="text-sm text-black">
+                          <span className="text-sm text-gray-800">
                             Crear múltiples datasets (uno por cada serie de tiempo) - Recomendado
                           </span>
                         </label>
@@ -368,7 +560,7 @@ export default function AdminPageSimple() {
                             onChange={(e) => setUploadMode(e.target.value as 'single')}
                             className="mr-2"
                           />
-                          <span className="text-sm text-black">
+                          <span className="text-sm text-gray-800">
                             Crear un solo dataset (solo primera serie de tiempo)
                           </span>
                         </label>
@@ -379,7 +571,7 @@ export default function AdminPageSimple() {
                   {/* Preview de datos */}
                   {csvPreview.sampleData.length > 0 && (
                     <div className="mt-4">
-                      <h4 className="font-medium text-black mb-2">Vista previa (primeras filas):</h4>
+                      <h4 className="font-medium text-gray-900 mb-2">Vista previa (primeras filas):</h4>
                       <div className="overflow-x-auto">
                         <table className="min-w-full text-xs border">
                           <thead>
@@ -432,7 +624,7 @@ export default function AdminPageSimple() {
         {activeTab === 'datasets' && (
           <div className="bg-white shadow rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-black">Datasets</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Datasets</h2>
               <button
                 onClick={loadDatasets}
                 className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
@@ -442,17 +634,17 @@ export default function AdminPageSimple() {
             </div>
             
             {loading ? (
-              <p className="text-black">Cargando datasets...</p>
+              <p className="text-gray-800">Cargando datasets...</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Nombre</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Categoría</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Dificultad</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Estado</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Puntos</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Nombre</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Categoría</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Dificultad</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Estado</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Puntos</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -539,10 +731,10 @@ export default function AdminPageSimple() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Usuario</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Rol</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Asignaciones</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase">Registro</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase">Usuario</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase">Rol</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase">Asignaciones</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase">Registro</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -550,21 +742,21 @@ export default function AdminPageSimple() {
                         <tr key={user._id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
-                              <div className="text-sm font-medium text-black">{user.username}</div>
-                              <div className="text-sm text-black">{user.email}</div>
+                              <div className="text-sm font-medium text-gray-900">{user.username}</div>
+                              <div className="text-sm text-gray-600">{user.email}</div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-black'
+                              user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
                             }`}>
                               {user.role}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                             {user.assignedDatasets.length}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                             {new Date(user.createdAt).toLocaleDateString()}
                           </td>
                         </tr>
@@ -583,19 +775,19 @@ export default function AdminPageSimple() {
             
             {/* Formulario para asignar dataset */}
             <div className="mb-8 p-4 bg-gray-50 rounded-lg">
-              <h3 className="text-lg font-medium mb-4 text-black">Asignar Dataset a Usuario</h3>
+              <h3 className="text-lg font-medium mb-4 text-gray-900">Asignar Dataset a Usuario</h3>
               <form onSubmit={handleAssignDataset} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-black mb-2">Usuario</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">Usuario</label>
                   <select
                     value={selectedUser}
                     onChange={(e) => setSelectedUser(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
-                    <option value="">Seleccionar usuario</option>
+                    <option value="" className="text-gray-500">Seleccionar usuario</option>
                     {users.filter(u => u.role === 'user').map(user => (
-                      <option key={user._id} value={user._id}>
+                      <option key={user._id} value={user._id} className="text-gray-900">
                         {user.username} ({user.email})
                       </option>
                     ))}
@@ -603,16 +795,16 @@ export default function AdminPageSimple() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-black mb-2">Dataset</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">Dataset</label>
                   <select
                     value={selectedDataset}
                     onChange={(e) => setSelectedDataset(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
-                    <option value="">Seleccionar dataset</option>
+                    <option value="" className="text-gray-500">Seleccionar dataset</option>
                     {datasets.filter(d => d.status === 'active').map(dataset => (
-                      <option key={dataset._id} value={dataset._id}>
+                      <option key={dataset._id} value={dataset._id} className="text-gray-900">
                         {dataset.name} ({dataset.category})
                       </option>
                     ))}
@@ -669,6 +861,122 @@ export default function AdminPageSimple() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'evaluations' && (
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Evaluaciones Completadas</h2>
+              <div className="flex space-x-2">
+                <button
+                  onClick={downloadEvaluationsCSV}
+                  disabled={loading}
+                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Descargar CSV</span>
+                </button>
+                <button
+                  onClick={loadEvaluations}
+                  disabled={loading}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Actualizar
+                </button>
+              </div>
+            </div>
+            
+            {loading ? (
+              <p className="text-gray-700">Cargando evaluaciones...</p>
+            ) : evaluations.length === 0 ? (
+              <p className="text-gray-700">No hay evaluaciones disponibles.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase">Usuario</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase">Dataset</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase">Estado</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase">Change Points</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase">Fecha</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {evaluations.map((evaluation) => (
+                      <tr key={evaluation._id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {evaluation.userId?.username || 'Usuario desconocido'}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {evaluation.userId?.email || ''}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {evaluation.datasetId?.name || 'Dataset desconocido'}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {evaluation.datasetId?.category || ''}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            evaluation.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            evaluation.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {evaluation.status === 'completed' ? 'Completada' :
+                             evaluation.status === 'draft' ? 'Borrador' :
+                             evaluation.status || 'Sin estado'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {evaluation.noChangePoints ? 
+                            'Sin change points' : 
+                            `${evaluation.changePoints?.length || 0} CP(s)`}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {new Date(evaluation.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => downloadLabeledSeries(
+                              evaluation._id,
+                              evaluation.datasetId?.name || 'dataset',
+                              evaluation.userId?.username || 'user'
+                            )}
+                            className="text-blue-600 hover:text-blue-900 mr-4 flex items-center space-x-1"
+                            title="Descargar serie etiquetada"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Serie CSV</span>
+                          </button>
+                          <button
+                            onClick={() => handleViewEvaluation(evaluation)}
+                            className="text-green-600 hover:text-green-900"
+                            title="Ver detalles"
+                          >
+                            👁️ Ver
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

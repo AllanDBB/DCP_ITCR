@@ -18,13 +18,15 @@ const { verifyToken } = require('../middlewares/auth');
 
 const router = express.Router();
 
-// Rutas básicas de datasets
+// Rutas públicas (sin autenticación)
 router.get('/available', getAvailableDatasets);
 router.get('/stats', getDatasetStats);
-router.get('/:id', getDatasetById);
 
-// Rutas protegidas
+// Middleware de autenticación para todas las rutas siguientes
 router.use(verifyToken);
+
+// Rutas protegidas que requieren autenticación
+router.get('/:id', getDatasetById);
 
 // Rutas para datasets asignados a usuarios
 router.get('/my/assigned', getMyAssignedDatasets);
