@@ -1,23 +1,20 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiService } from '@/utils/api';
+import { apiService, type User, type UpdateProfileData, type ChangePasswordData } from '@/utils/api';
 import Toast from '@/components/Toast';
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  createdAt: string;
-}
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<any>;
-  register: (username: string, email: string, password: string) => Promise<any>;
+  register: (username: string, email: string, password: string, university?: string) => Promise<any>;
   logout: () => Promise<void>;
+  updateProfile: (profileData: UpdateProfileData) => Promise<any>;
+  changePassword: (passwordData: ChangePasswordData) => Promise<any>;
+  deleteAccount: (password: string) => Promise<any>;
+  completeTraining: () => Promise<any>;
   showToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
@@ -53,18 +50,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        console.log('🔄 Inicializando autenticación...');
+        console.log('🔍 Token en localStorage:', apiService.getToken() ? 'EXISTE' : 'NO EXISTE');
+        
         if (apiService.isAuthenticated()) {
-          const isValid = await apiService.verifyToken();
-          if (isValid) {
-            const userData = await apiService.getProfile();
-            setUser(userData.user);
-          } else {
-            apiService.removeToken();
+          console.log('✅ Token encontrado, verificando validez...');
+          try {
+            const isValid = await apiService.verifyToken();
+            console.log('🔍 Token válido:', isValid);
+            
+            if (isValid) {
+              console.log('📝 Obteniendo perfil del usuario...');
+              const userData = await apiService.getProfile();
+              console.log('👤 Usuario obtenido:', userData.user);
+              setUser(userData.user);
+              console.log('✅ Usuario establecido en context');
+            } else {
+              console.log('❌ Token no válido, eliminando...');
+              apiService.removeToken();
+              setUser(null);
+            }
+          } catch (profileError) {
+            console.error('❌ Error al obtener perfil:', profileError);
+            // No eliminar el token inmediatamente, solo si es un error de autenticación
+            if ((profileError as any)?.message?.includes('401') || (profileError as any)?.message?.includes('Token')) {
+              console.log('🔐 Error de autenticación, eliminando token');
+              apiService.removeToken();
+              setUser(null);
+            } else {
+              console.log('🔄 Error temporal, manteniendo token para próximo intento');
+              // Intentar una vez más en caso de error de red
+              setTimeout(() => {
+                initializeAuth();
+              }, 2000);
+              return;
+            }
           }
+        } else {
+          console.log('❌ No hay token, usuario no autenticado');
+          setUser(null);
         }
       } catch (error) {
-        console.error('Error al inicializar autenticación:', error);
-        apiService.removeToken();
+        console.error('❌ Error al inicializar autenticación:', error);
+        // Solo eliminar token si es claramente un error de autenticación
+        if ((error as any)?.message?.includes('401') || (error as any)?.message?.includes('Token')) {
+          apiService.removeToken();
+          setUser(null);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -86,10 +118,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (username: string, email: string, password: string, university?: string) => {
     try {
       console.log('Iniciando registro...');
-      const response = await apiService.register({ username, email, password });
+      const registerData: any = { username, email, password };
+      
+      // Agregar campo opcional si está presente
+      if (university) registerData.university = university;
+      
+      const response = await apiService.register(registerData);
       console.log('Register response:', response);
       setUser(response.user);
       console.log('Usuario establecido:', response.user);
@@ -114,6 +151,60 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateProfile = async (profileData: UpdateProfileData) => {
+    try {
+      console.log('=== DEBUG Frontend updateProfile ===');
+      console.log('Datos enviados desde el frontend:', profileData);
+      
+      const response = await apiService.updateProfile(profileData);
+      
+      console.log('Respuesta del servidor:', response);
+      console.log('Usuario actualizado recibido:', response.user);
+      
+      setUser(response.user);
+      showToast('Perfil actualizado exitosamente! ✅', 'success');
+      return response;
+    } catch (error) {
+      console.error('Error al actualizar perfil:', error);
+      throw error;
+    }
+  };
+
+  const changePassword = async (passwordData: ChangePasswordData) => {
+    try {
+      const response = await apiService.changePassword(passwordData);
+      showToast('Contraseña cambiada exitosamente! 🔒', 'success');
+      return response;
+    } catch (error) {
+      console.error('Error al cambiar contraseña:', error);
+      throw error;
+    }
+  };
+
+  const deleteAccount = async (password: string) => {
+    try {
+      const response = await apiService.deleteAccount(password);
+      setUser(null);
+      showToast('Cuenta eliminada exitosamente. ¡Gracias por usar DCP-ITCR! 👋', 'info');
+      return response;
+    } catch (error) {
+      console.error('Error al eliminar cuenta:', error);
+      throw error;
+    }
+  };
+
+  const completeTraining = async () => {
+    try {
+      const response = await apiService.completeTraining();
+      setUser(response.user);
+      showToast('¡Felicitaciones! Has completado la capacitación exitosamente 🎉', 'success');
+      return response;
+    } catch (error) {
+      console.error('Error al completar capacitación:', error);
+      throw error;
+    }
+  };
+
   const showToast = (message: string, type: 'success' | 'error' | 'info') => {
     setToast({
       show: true,
@@ -132,6 +223,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    updateProfile,
+    changePassword,
+    deleteAccount,
+    completeTraining,
     showToast,
   };
 

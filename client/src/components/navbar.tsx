@@ -124,6 +124,7 @@ const Navbar = () => {
                       <p className="text-sm font-medium text-gray-700 truncate">{user?.username}</p>
                       <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                     </div>
+                    {/* TEMPORALMENTE DESHABILITADO - Mi perfil
                     <Link
                       href="/perfil"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
@@ -131,6 +132,25 @@ const Navbar = () => {
                     >
                       Mi perfil
                     </Link>
+                    */}
+                    {user?.role === 'user' && (
+                      <Link
+                        href="/evaluador/mis-datasets"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        Mis Datasets Asignados
+                      </Link>
+                    )}
+                    {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                      <Link
+                        href="/admin"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        Panel de Administración
+                      </Link>
+                    )}
                     <button
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                       onClick={handleLogout}
@@ -219,6 +239,7 @@ const Navbar = () => {
             
             {isAuthenticated && (
               <>
+                {/* TEMPORALMENTE DESHABILITADO - Mi perfil
                 <Link
                   href="/perfil"
                   className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
@@ -226,6 +247,16 @@ const Navbar = () => {
                 >
                   Mi perfil
                 </Link>
+                */}
+                {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                  <Link
+                    href="/admin"
+                    className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Panel de Administración
+                  </Link>
+                )}
                 <div className="pt-1.5 pb-1">
                   <Button 
                     variant="primary"

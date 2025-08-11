@@ -106,13 +106,13 @@ export default function EvaluadorPage() {
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-semibold text-gray-800">Evaluación Manual</h3>
-                <p className="text-sm text-blue-600">Etiqueta series temporales</p>
+                <h3 className="text-lg font-semibold text-gray-800">Mis Datasets Asignados</h3>
+                <p className="text-sm text-blue-600">Ver series asignadas</p>
               </div>
             </div>
             
             <p className="text-gray-600 mb-6 text-sm">
-              Una vez completada la capacitación, podrás comenzar a etiquetar series temporales reales para contribuir al dataset de entrenamiento.
+              Accede a las series de tiempo que te han sido asignadas por el administrador para evaluar y etiquetar change points.
             </p>
             
             <div className="space-y-3 mb-6">
@@ -143,10 +143,10 @@ export default function EvaluadorPage() {
             </div>
             
             <Link 
-              href="/evaluador/manual" 
+              href="/evaluador/mis-datasets" 
               className="inline-flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200"
             >
-              Comenzar Etiquetado
+              Comenzar Evaluación
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

@@ -32,22 +32,42 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Conexión a MongoDB
-const mongoURI = process.env.MONGODB_URI;
+const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://DCPUser:m0bex47d7rLeGpTj@cluster0.mmx82lq.mongodb.net/DCP-ITCR?retryWrites=true&w=majority&appName=Cluster0';
 
-mongoose.connect(mongoURI)
+console.log('Intentando conectar a MongoDB con URI:', mongoURI);
+
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
 .then(() => {
-  console.log('MongoDB conectado');
+  console.log('✅ MongoDB conectado exitosamente');
+  console.log('Base de datos:', mongoose.connection.name);
+  console.log('Host:', mongoose.connection.host);
+  console.log('Puerto:', mongoose.connection.port);
 })
 .catch((err) => {
-  console.error('Error de conexión a MongoDB:', err);
-  process.exit(1);
+  console.error('❌ Error de conexión a MongoDB:', err.message);
+  console.log('💡 Asegúrate de que MongoDB esté instalado y corriendo');
+  console.log('💡 O usa MongoDB Atlas: https://www.mongodb.com/atlas');
+  
+  // En desarrollo, no salir del proceso para permitir debugging
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
 });
 
 // Importar rutas
-const authRoutes = require('./routes/authRoutes');
+const authRoutes = require('./routes/authRoutes-simple');
+const datasetRoutes = require('./routes/datasetRoutes-simple');
+const labelRoutes = require('./routes/labelRoutes');
+const adminRoutes = require('./routes/adminRoutes-complete');
 
 // Usar rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/datasets', datasetRoutes);
+app.use('/api/labels', labelRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Ruta de ping
 app.get('/ping', (req, res) => {

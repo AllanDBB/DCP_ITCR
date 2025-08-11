@@ -1,6 +1,6 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { register, login, getProfile, logout } = require('../controllers/authController');
+const { register, login, getProfile, logout, forgotPassword, resetPassword, updateProfile, changePassword, deleteAccount, completeTraining } = require('../controllers/authController');
 const { verifyToken } = require('../middlewares/auth');
 
 const router = express.Router();
@@ -15,10 +15,66 @@ const registerValidation = [
         .withMessage('El nombre de usuario solo puede contener letras, números y guiones bajos'),
     
     body('email')
-        .isEmail()
-        .withMessage('Debe proporcionar un correo electrónico válido')
-        .normalizeEmail(),
+        .custom((value) => {
+            console.log('Email en validación express-validator (registro):', value);
+            // Validación personalizada de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                throw new Error('Debe proporcionar un correo electrónico válido');
+            }
+            return true;
+        })
+        .trim(),
     
+    body('password')
+        .isLength({ min: 6 })
+        .withMessage('La contraseña debe tener al menos 6 caracteres')
+        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+        .withMessage('La contraseña debe contener al menos una letra minúscula, una mayúscula y un número'),
+    
+    // Solo universidad como campo opcional
+    body('university')
+        .optional()
+        .trim()
+        .isLength({ max: 100 })
+        .withMessage('La universidad debe tener máximo 100 caracteres')
+];
+
+// Validaciones para login
+const loginValidation = [
+    body('email')
+        .custom((value) => {
+            console.log('Email en validación express-validator (login):', value);
+            // Validación personalizada de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                throw new Error('Debe proporcionar un correo electrónico válido');
+            }
+            return true;
+        })
+        .trim(),
+    
+    body('password')
+        .notEmpty()
+        .withMessage('La contraseña es obligatoria')
+];
+
+// Validaciones para recuperación de contraseña
+const forgotPasswordValidation = [
+    body('email')
+        .custom((value) => {
+            console.log('Email en validación express-validator (forgot password):', value);
+            // Validación personalizada de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                throw new Error('Debe proporcionar un correo electrónico válido');
+            }
+            return true;
+        })
+        .trim()
+];
+
+const resetPasswordValidation = [
     body('password')
         .isLength({ min: 6 })
         .withMessage('La contraseña debe tener al menos 6 caracteres')
@@ -26,16 +82,50 @@ const registerValidation = [
         .withMessage('La contraseña debe contener al menos una letra minúscula, una mayúscula y un número')
 ];
 
-// Validaciones para login
-const loginValidation = [
-    body('email')
-        .isEmail()
-        .withMessage('Debe proporcionar un correo electrónico válido')
-        .normalizeEmail(),
+const updateProfileValidation = [
+    body('university')
+        .optional()
+        .trim()
+        .isLength({ max: 100 })
+        .withMessage('La universidad debe tener máximo 100 caracteres'),
     
-    body('password')
+    body('phone')
+        .optional()
+        .trim()
+        .isLength({ max: 20 })
+        .withMessage('El teléfono debe tener máximo 20 caracteres'),
+    
+    body('website')
+        .optional()
+        .trim()
+        .custom((value) => {
+            if (value && value.trim() !== '') {
+                // Validación personalizada de URL más flexible
+                const urlRegex = /^https?:\/\/.+/;
+                if (!urlRegex.test(value)) {
+                    throw new Error('La URL del sitio web debe comenzar con http:// o https://');
+                }
+            }
+            return true;
+        }),
+    
+    body('location')
+        .optional()
+        .trim()
+        .isLength({ max: 100 })
+        .withMessage('La ubicación debe tener máximo 100 caracteres')
+];
+
+const changePasswordValidation = [
+    body('currentPassword')
         .notEmpty()
-        .withMessage('La contraseña es obligatoria')
+        .withMessage('La contraseña actual es obligatoria'),
+    
+    body('newPassword')
+        .isLength({ min: 6 })
+        .withMessage('La nueva contraseña debe tener al menos 6 caracteres')
+        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+        .withMessage('La nueva contraseña debe contener al menos una letra minúscula, una mayúscula y un número')
 ];
 
 // Rutas de autenticación
@@ -49,8 +139,26 @@ router.post('/login', loginValidation, login);
 // GET /api/auth/profile - Obtener perfil del usuario autenticado
 router.get('/profile', verifyToken, getProfile);
 
+// PUT /api/auth/profile - Actualizar perfil completo
+router.put('/profile', verifyToken, updateProfileValidation, updateProfile);
+
+// POST /api/auth/change-password - Cambiar contraseña
+router.post('/change-password', verifyToken, changePasswordValidation, changePassword);
+
+// DELETE /api/auth/account - Eliminar cuenta
+router.delete('/account', verifyToken, deleteAccount);
+
 // POST /api/auth/logout - Cerrar sesión
 router.post('/logout', verifyToken, logout);
+
+// POST /api/auth/forgot-password - Solicitar recuperación de contraseña
+router.post('/forgot-password', forgotPasswordValidation, forgotPassword);
+
+// POST /api/auth/reset-password/:token - Restablecer contraseña
+router.post('/reset-password/:token', resetPasswordValidation, resetPassword);
+
+// POST /api/auth/complete-training - Marcar capacitación como completada
+router.post('/complete-training', verifyToken, completeTraining);
 
 // GET /api/auth/verify - Verificar si el token es válido
 router.get('/verify', verifyToken, (req, res) => {
@@ -61,7 +169,15 @@ router.get('/verify', verifyToken, (req, res) => {
             id: req.user._id,
             username: req.user.username,
             email: req.user.email,
-            createdAt: req.user.createdAt
+            role: req.user.role,
+            university: req.user.university,
+            phone: req.user.phone,
+            website: req.user.website,
+            location: req.user.location,
+            hasCompletedTraining: req.user.hasCompletedTraining,
+            trainingCompletedAt: req.user.trainingCompletedAt,
+            createdAt: req.user.createdAt,
+            updatedAt: req.user.updatedAt
         }
     });
 });
