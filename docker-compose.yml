@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  api:
+    build: ./server
+    container_name: dcp_api
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server:/usr/src/app
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
