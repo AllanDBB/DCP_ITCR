@@ -11,7 +11,10 @@ const app = express();
 // Middleware de seguridad
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: [
+    process.env.CLIENT_URL || 'http://localhost:3000',
+    'https://dcp-itcr-ashen.vercel.app'
+  ],
   credentials: true
 }));
 
@@ -32,7 +35,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Conexión a MongoDB
-const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://DCPUser:m0bex47d7rLeGpTj@cluster0.mmx82lq.mongodb.net/DCP-ITCR?retryWrites=true&w=majority&appName=Cluster0';
+const mongoURI = 'mongodb+srv://DCPUser:m0bex47d7rLeGpTj@cluster0.mmx82lq.mongodb.net/DCP-ITCR?retryWrites=true&w=majority&appName=Cluster0';
 
 console.log('Intentando conectar a MongoDB con URI:', mongoURI);
 
