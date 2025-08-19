@@ -20,7 +20,12 @@ const { requireAdmin } = require('../middlewares/adminAuth');
 
 const router = express.Router();
 
-// Todas las rutas requieren autenticación y permisos de admin
+// Middleware para imprimir el token de Authorization en cada petición a rutas de admin
+router.use((req, res, next) => {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    console.log('[ADMIN ROUTE] Token recibido:', authHeader);
+    next();
+});
 router.use(verifyToken);
 router.use(requireAdmin);
 
