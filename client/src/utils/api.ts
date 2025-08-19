@@ -105,57 +105,37 @@ class ApiService {
 
     // Agregar token de autorización si existe
     const token = this.getToken();
-    console.log('=== DEBUG: API Request ===');
-    console.log('Endpoint:', endpoint);
-    console.log('Full URL:', url);
-    console.log('Token exists:', !!token);
-    console.log('Token value:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
-    
     if (token) {
       config.headers = {
         ...config.headers,
         'Authorization': `Bearer ${token}`,
       };
-      console.log('Authorization header set:', `Bearer ${token.substring(0, 20)}...`);
+      // Log para imprimir el token enviado
+      console.log('[API] Token enviado en Authorization:', token);
     }
 
     try {
-      console.log('Making request to:', url);
       const response = await fetch(url, config);
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-      
       const data = await response.json();
-      console.log('Response data:', data);
 
       if (!response.ok) {
-        console.error('HTTP Error:', response.status, response.statusText);
-        console.error('Error data:', data);
-        
         // Crear error específico según el código HTTP
         const errorMessage = data.message || `Error ${response.status}: ${response.statusText}`;
         const error = new Error(errorMessage);
         (error as any).status = response.status;
         (error as any).statusText = response.statusText;
         (error as any).data = data;
-        
         throw error;
       }
 
       return data;
     } catch (error) {
-      console.error('=== DEBUG: API Request Error ===');
-      console.error('Error type:', error?.constructor?.name);
-      console.error('Error message:', (error as Error).message);
-      console.error('Full error:', error);
-      
       // Si es un error de red (no hay respuesta del servidor)
       if (error instanceof TypeError && error.message.includes('fetch')) {
         const networkError = new Error('Error de conexión: No se puede conectar al servidor');
         (networkError as any).isNetworkError = true;
         throw networkError;
       }
-      
       throw error;
     }
   }
@@ -698,26 +678,15 @@ class ApiService {
 
   // Métodos para manejo de tokens
   setToken(token: string): void {
-    console.log('=== DEBUG: setToken ===');
-    console.log('Token to save:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
-    
     if (typeof window !== 'undefined') {
       localStorage.setItem('auth_token', token);
-      console.log('Token saved to localStorage');
-    } else {
-      console.log('Window not available, cannot save token');
     }
   }
 
   getToken(): string | null {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
-      console.log('=== DEBUG: getToken ===');
-      console.log('Token retrieved:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
-      return token;
+      return localStorage.getItem('auth_token');
     }
-    console.log('=== DEBUG: getToken ===');
-    console.log('Window not available, returning null');
     return null;
   }
 
