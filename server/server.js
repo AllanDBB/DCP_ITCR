@@ -6,7 +6,11 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 
+
 const app = express();
+
+// Permitir que Express confíe en el header X-Forwarded-For (necesario para proxies y rate-limit)
+app.set('trust proxy', 1);
 
 // Middleware de seguridad
 app.use(helmet());
