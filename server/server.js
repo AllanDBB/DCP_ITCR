@@ -61,10 +61,10 @@ mongoose.connect(mongoURI, {
 });
 
 // Importar rutas
-const authRoutes = require('./routes/authRoutes-simple');
-const datasetRoutes = require('./routes/datasetRoutes-simple');
+const authRoutes = require('./routes/authRoutes');
+const datasetRoutes = require('./routes/datasetRoutes');
 const labelRoutes = require('./routes/labelRoutes');
-const adminRoutes = require('./routes/adminRoutes-complete');
+const adminRoutes = require('./routes/adminRoutes');
 
 // Usar rutas
 app.use('/api/auth', authRoutes);
