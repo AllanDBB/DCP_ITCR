@@ -14,7 +14,7 @@ const {
     getAllLabels,
     downloadLabelsCSV,
     downloadLabeledSeriesCSV
-} = require('../controllers/adminController-fixed');
+} = require('../controllers/adminController');
 const { verifyToken } = require('../middlewares/auth');
 const { requireAdmin } = require('../middlewares/adminAuth');
 
