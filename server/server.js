@@ -18,7 +18,8 @@ app.use(helmet());
 const allowedOrigins = [
   'http://localhost:3000',
   'https://dcp-itcr-ashen.vercel.app',
-  'https://aea08eec720f.ngrok-free.app'
+  'https://aea08eec720f.ngrok-free.app',
+  'http://203.161.47.109:5000'
 ];
 
 
@@ -144,3 +145,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
 });
+
+
