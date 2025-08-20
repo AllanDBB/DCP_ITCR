@@ -19,7 +19,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://dcp-itcr-ashen.vercel.app',
   'https://aea08eec720f.ngrok-free.app',
-  'http://203.161.47.109:5000'
+  'http://203.161.47.109:5000',
+  'https://dcp-itcr.com'
 ];
 
 
