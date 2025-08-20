@@ -18,7 +18,7 @@ app.use(helmet());
 const allowedOrigins = [
   'http://localhost:3000',
   'https://dcp-itcr-ashen.vercel.app',
-  'https://5c33eb170423.ngrok-free.app'
+  'https://aea08eec720f.ngrok-free.app'
 ];
 
 
@@ -40,6 +40,14 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
   }
+  // Log para depuración de CORS
+  console.log('[CORS] Request:', {
+    url: req.originalUrl,
+    method: req.method,
+    origin,
+    'Access-Control-Allow-Origin': res.getHeader('Access-Control-Allow-Origin'),
+    'Access-Control-Allow-Credentials': res.getHeader('Access-Control-Allow-Credentials')
+  });
   next();
 });
 
