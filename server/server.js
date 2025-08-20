@@ -32,6 +32,12 @@ app.use(cors({
   },
   credentials: true
 }));
+  app.use(cors({
+    origin: function(origin, callback) {
+      callback(null, origin);
+    },
+    credentials: true
+  }));
 
 // Middleware para forzar los headers CORS en todas las respuestas (depuración)
 app.use((req, res, next) => {
