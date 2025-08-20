@@ -19,7 +19,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://203.161.47.109:3000',
   'https://dcp-itcr.space',
-  'https://www.dcp-itcr.space'
+  'https://www.dcp-itcr.space',
+  'https://backend.dcp-itcr.com'
 ];
 
 app.use(cors({
