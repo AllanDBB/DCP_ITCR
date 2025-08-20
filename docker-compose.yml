@@ -10,3 +10,14 @@ services:
     environment:
       - NODE_ENV=production
     restart: unless-stopped
+
+  web:
+    build: ./client
+    container_name: dcp_web
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - api
+    restart: unless-stopped

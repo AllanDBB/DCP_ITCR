@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://aea08eec720f.ngrok-free.app/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://api:5000/api';
 
 interface ApiResponse<T> {
   success: boolean;
