@@ -15,7 +15,41 @@ app.set('trust proxy', 1);
 // Middleware de seguridad
 app.use(helmet());
 
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://dcp-itcr-ashen.vercel.app',
+  'https://aea08eec720f.ngrok-free.app'
+];
+
+
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, origin);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+// Middleware para forzar los headers CORS en todas las respuestas (depuración)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  // Log para depuración de CORS
+  console.log('[CORS] Request:', {
+    url: req.originalUrl,
+    method: req.method,
+    origin,
+    'Access-Control-Allow-Origin': res.getHeader('Access-Control-Allow-Origin'),
+    'Access-Control-Allow-Credentials': res.getHeader('Access-Control-Allow-Credentials')
+  });
+  next();
+});
 
 // Rate limiting
 const limiter = rateLimit({
