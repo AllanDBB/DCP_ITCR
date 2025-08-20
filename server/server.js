@@ -21,9 +21,9 @@ const allowedOrigins = [
   'https://5c33eb170423.ngrok-free.app'
 ];
 
+
 app.use(cors({
   origin: function(origin, callback) {
-    // Permitir peticiones sin origen (como Postman) o si el origen está en la lista
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -32,6 +32,16 @@ app.use(cors({
   },
   credentials: true
 }));
+
+// Middleware para forzar los headers CORS en todas las respuestas (depuración)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  next();
+});
 
 // Rate limiting
 const limiter = rateLimit({
