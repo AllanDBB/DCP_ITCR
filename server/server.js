@@ -14,9 +14,11 @@ app.set('trust proxy', 1);
 
 // Middleware de seguridad
 app.use(helmet());
+
 const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:3000',
-  'https://dcp-itcr-ashen.vercel.app'
+  'http://localhost:3000',
+  'https://dcp-itcr-ashen.vercel.app',
+  'https://5c33eb170423.ngrok-free.app'
 ];
 
 app.use(cors({
