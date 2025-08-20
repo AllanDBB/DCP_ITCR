@@ -14,11 +14,20 @@ app.set('trust proxy', 1);
 
 // Middleware de seguridad
 app.use(helmet());
+const allowedOrigins = [
+  process.env.CLIENT_URL || 'http://localhost:3000',
+  'https://dcp-itcr-ashen.vercel.app'
+];
+
 app.use(cors({
-  origin: [
-    process.env.CLIENT_URL || 'http://localhost:3000',
-    'https://dcp-itcr-ashen.vercel.app'
-  ],
+  origin: function(origin, callback) {
+    // Permitir peticiones sin origen (como Postman) o si el origen está en la lista
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 

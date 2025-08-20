@@ -50,8 +50,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        const token = apiService.getToken();
         console.log('🔄 Inicializando autenticación...');
-        console.log('🔍 Token en localStorage:', apiService.getToken() ? 'EXISTE' : 'NO EXISTE');
+        console.log('🔍 Token en localStorage:', token ? token : 'NO EXISTE');
         
         if (apiService.isAuthenticated()) {
           console.log('✅ Token encontrado, verificando validez...');
@@ -64,7 +65,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               const userData = await apiService.getProfile();
               console.log('👤 Usuario obtenido:', userData.user);
               setUser(userData.user);
-              console.log('✅ Usuario establecido en context');
+              console.log('✅ Usuario establecido en context:', userData.user);
+              console.log('🔑 Token actual:', token);
             } else {
               console.log('❌ Token no válido, eliminando...');
               apiService.removeToken();
@@ -90,6 +92,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('❌ No hay token, usuario no autenticado');
           setUser(null);
         }
+        // Log extra para depuración
+        console.log('🧑‍💼 Estado final usuario:', user);
+        console.log('🔑 Estado final token:', token);
       } catch (error) {
         console.error('❌ Error al inicializar autenticación:', error);
         // Solo eliminar token si es claramente un error de autenticación
