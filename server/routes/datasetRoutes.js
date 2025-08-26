@@ -5,7 +5,9 @@ const {
     createDataset, 
     updateDataset, 
     deleteDataset, 
-    getDatasetStats
+    getDatasetStats,
+    getMyAssignedDatasets,
+    updateAssignedDatasetStatus
 } = require('../controllers/datasetController');
 
 // Importar métodos adicionales del controlador completo
@@ -22,9 +24,12 @@ router.get('/stats', getDatasetStats);
 router.use(verifyToken);
 
 // Rutas protegidas que requieren autenticación
-router.get('/:id', getDatasetById);
+// Routes específicas de usuario (deben ir antes de '/:id' para evitar que 'my' sea interpretado como id)
+router.get('/my/assigned', getMyAssignedDatasets);
+router.put('/my/assigned/:datasetId/status', updateAssignedDatasetStatus);
 
-// Rutas para datasets asignados a usuarios
+// Rutas protegidas para obtener un dataset por ID
+router.get('/:id', getDatasetById);
 
 // Rutas administrativas
 router.post('/', createDataset);
