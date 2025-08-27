@@ -258,6 +258,13 @@ export default function ManualEvaluationPage() {
         `Serie "${currentDataset.name}" marcada como sin change points` :
         `Guardados ${changePoints.length} change points para "${currentDataset.name}"`);
       
+      // If the evaluation was completed, mark assignment as completed on server
+      try {
+        await apiService.updateAssignedDatasetStatus(currentDataset._id, 'completed');
+      } catch (err) {
+        console.error('Error updating assignment status after saving evaluation:', err);
+      }
+
       // Redirigir de vuelta a la lista de datasets
       router.push('/evaluador/mis-datasets');
       

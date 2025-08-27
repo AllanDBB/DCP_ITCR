@@ -441,6 +441,13 @@ function ManualEvaluationPage() {
       
       // Solo redirigir si se completa la evaluación
       if (status === 'completed') {
+        // Mark assignment as completed on the server so the assignments list shows the updated status
+        try {
+          await apiService.updateAssignedDatasetStatus(currentDataset._id, 'completed');
+        } catch (err) {
+          console.error('Error updating assignment status after completing evaluation:', err);
+        }
+
         router.push('/evaluador/mis-datasets');
       }
       
