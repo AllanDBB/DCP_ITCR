@@ -23,7 +23,7 @@ interface User {
   email: string;
   role: string;
   assignedDatasets: Array<{
-    dataset: Dataset;
+    dataset: Dataset | null;
     assignedAt: string;
     status: string;
     completedAt?: string;
@@ -837,10 +837,10 @@ Fecha: ${new Date(evaluation.createdAt).toLocaleString()}
                     </span>
                   </div>
                   <div className="space-y-2">
-                    {user.assignedDatasets.map(assignment => (
-                      <div key={assignment.dataset._id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    {user.assignedDatasets.map((assignment, idx) => (
+                      <div key={assignment.dataset?._id || `${user._id}-${idx}`} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                         <div>
-                          <span className="font-medium text-black">{assignment.dataset.name}</span>
+                          <span className="font-medium text-black">{assignment.dataset?.name || 'Dataset no disponible'}</span>
                           <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             assignment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                             assignment.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
@@ -849,12 +849,16 @@ Fecha: ${new Date(evaluation.createdAt).toLocaleString()}
                             {assignment.status}
                           </span>
                         </div>
-                        <button
-                          onClick={() => handleRemoveAssignment(user._id, assignment.dataset._id)}
-                          className="text-red-600 hover:text-red-800 text-sm"
-                        >
-                          Remover
-                        </button>
+                        {assignment.dataset?._id ? (
+                          <button
+                            onClick={() => handleRemoveAssignment(user._id, assignment.dataset!._id)}
+                            className="text-red-600 hover:text-red-800 text-sm"
+                          >
+                            Remover
+                          </button>
+                        ) : (
+                          <span className="text-sm text-gray-500">No disponible</span>
+                        )}
                       </div>
                     ))}
                   </div>
