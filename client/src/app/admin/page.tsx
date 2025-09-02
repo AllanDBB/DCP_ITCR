@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/utils/api';
 import { useRouter } from 'next/navigation';
@@ -65,7 +65,18 @@ export default function AdminPageSimple() {
   // Estados para formularios
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [selectedUser, setSelectedUser] = useState<string>('');
-  const [selectedDataset, setSelectedDataset] = useState<string>('');
+  const [selectedDatasets, setSelectedDatasets] = useState<string[]>([]);
+  const [datasetQuery, setDatasetQuery] = useState<string>('');
+
+  const activeDatasets = useMemo(() => datasets.filter(d => d.status === 'active'), [datasets]);
+  const filteredDatasets = useMemo(() => {
+    const q = datasetQuery.trim().toLowerCase();
+    if (!q) return activeDatasets;
+    return activeDatasets.filter(d =>
+      d.name.toLowerCase().includes(q) ||
+      (d.category || '').toLowerCase().includes(q)
+    );
+  }, [activeDatasets, datasetQuery]);
   
   // Estados para análisis dinámico del CSV
   const [csvPreview, setCsvPreview] = useState<{
@@ -232,6 +243,10 @@ export default function AdminPageSimple() {
         loadUserStats();
       } else if (activeTab === 'evaluations') {
         loadEvaluations();
+      } else if (activeTab === 'assignments') {
+        // Asegurar datos necesarios para asignaciones
+        loadUsers();
+        loadDatasets();
       }
     }
   }, [activeTab, isAuthenticated, user, loadEvaluations]);
@@ -360,18 +375,38 @@ export default function AdminPageSimple() {
 
   const handleAssignDataset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUser || !selectedDataset) {
-      setMessage({ type: 'error', text: 'Selecciona usuario y dataset' });
+    if (!selectedUser || selectedDatasets.length === 0) {
+      setMessage({ type: 'error', text: 'Selecciona usuario y al menos un dataset' });
       return;
     }
 
     try {
       setLoading(true);
-      await apiService.assignDatasetToUser(selectedUser, selectedDataset);
-      setMessage({ type: 'success', text: 'Dataset asignado exitosamente' });
+      const results = await Promise.allSettled(
+        selectedDatasets.map((ds) => apiService.assignDatasetToUser(selectedUser, ds))
+      );
+
+      let assigned = 0, already = 0, failed = 0;
+      results.forEach(r => {
+        if (r.status === 'fulfilled') {
+          assigned++;
+        } else {
+          const msg = (r.reason?.message || '').toLowerCase();
+          if (msg.includes('ya está asignado') || msg.includes('ya est') && msg.includes('asignado')) {
+            already++;
+          } else {
+            failed++;
+          }
+        }
+      });
+
+      const summary = `Asignaciones: ${assigned} ok` +
+        (already ? `, ${already} ya asignada(s)` : '') +
+        (failed ? `, ${failed} fallida(s)` : '');
+      setMessage({ type: failed > 0 && assigned === 0 ? 'error' as const : 'success', text: summary });
       setSelectedUser('');
-      setSelectedDataset('');
-      loadUsers();
+      setSelectedDatasets([]);
+      await loadUsers();
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Error al asignar dataset' });
     } finally {
@@ -795,29 +830,84 @@ Fecha: ${new Date(evaluation.createdAt).toLocaleString()}
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">Dataset</label>
-                  <select
-                    value={selectedDataset}
-                    onChange={(e) => setSelectedDataset(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="" className="text-gray-500">Seleccionar dataset</option>
-                    {datasets.filter(d => d.status === 'active').map(dataset => (
-                      <option key={dataset._id} value={dataset._id} className="text-gray-900">
-                        {dataset.name} ({dataset.category})
-                      </option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">Datasets</label>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={datasetQuery}
+                      onChange={(e) => setDatasetQuery(e.target.value)}
+                      placeholder="Buscar por nombre o categoría..."
+                      className="w-full sm:w-2/3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                    />
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-gray-700">{filteredDatasets.length} visibles</span>
+                      <span className="text-xs text-gray-700">{selectedDatasets.length} seleccionados</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDatasets(filteredDatasets.map(d => d._id))}
+                        className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100 text-gray-800"
+                      >
+                        Seleccionar visibles
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDatasets([])}
+                        className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100 text-gray-800"
+                      >
+                        Limpiar
+                      </button>
+                    </div>
+                  </div>
+                  <div className="border border-gray-200 rounded-md max-h-64 overflow-auto divide-y">
+                    {filteredDatasets.map((dataset) => {
+                      const checked = selectedDatasets.includes(dataset._id);
+                      return (
+                        <label key={dataset._id} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                setSelectedDatasets((prev) => {
+                                  if (e.target.checked) return Array.from(new Set([...prev, dataset._id]));
+                                  return prev.filter(id => id !== dataset._id);
+                                });
+                              }}
+                              className="h-4 w-4"
+                            />
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{dataset.name}</div>
+                              <div className="text-xs text-gray-600">{dataset.description}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full bg-gray-100 text-gray-800">
+                              {dataset.category}
+                            </span>
+                            <span className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                              dataset.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
+                              dataset.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {dataset.difficulty}
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                    {filteredDatasets.length === 0 && (
+                      <div className="px-3 py-6 text-sm text-gray-600">No se encontraron datasets activos.</div>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex items-end">
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    disabled={loading || !selectedUser || selectedDatasets.length === 0}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? 'Asignando...' : 'Asignar'}
+                    {loading ? 'Asignando...' : `Asignar (${selectedDatasets.length})`}
                   </button>
                 </div>
               </form>

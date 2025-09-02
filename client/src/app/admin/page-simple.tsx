@@ -57,7 +57,7 @@ export default function AdminPageSimple() {
   // Estados para formularios
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [selectedUser, setSelectedUser] = useState<string>('');
-  const [selectedDataset, setSelectedDataset] = useState<string>('');
+  const [selectedDatasets, setSelectedDatasets] = useState<string[]>([]);
 
   // Verificar autenticación y permisos
   useEffect(() => {
@@ -80,9 +80,12 @@ export default function AdminPageSimple() {
       } else if (activeTab === 'users') {
         loadUsers();
         loadUserStats();
+      } else if (activeTab === 'assignments') {
+        loadUsers();
+        loadDatasets();
       }
     }
-  }, [activeTab]);
+  }, [activeTab, isAuthenticated, user]);
 
   const loadDatasets = async () => {
     try {
@@ -150,18 +153,32 @@ export default function AdminPageSimple() {
 
   const handleAssignDataset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUser || !selectedDataset) {
-      setMessage({ type: 'error', text: 'Selecciona usuario y dataset' });
+    if (!selectedUser || selectedDatasets.length === 0) {
+      setMessage({ type: 'error', text: 'Selecciona usuario y al menos un dataset' });
       return;
     }
 
     try {
       setLoading(true);
-      await apiService.assignDatasetToUser(selectedUser, selectedDataset);
-      setMessage({ type: 'success', text: 'Dataset asignado exitosamente' });
+      const results = await Promise.allSettled(
+        selectedDatasets.map((ds) => apiService.assignDatasetToUser(selectedUser, ds))
+      );
+      let assigned = 0, already = 0, failed = 0;
+      results.forEach(r => {
+        if (r.status === 'fulfilled') assigned++;
+        else {
+          const msg = (r.reason?.message || '').toLowerCase();
+          if (msg.includes('ya está asignado') || (msg.includes('ya est') && msg.includes('asignado'))) already++;
+          else failed++;
+        }
+      });
+      const summary = `Asignaciones: ${assigned} ok` +
+        (already ? `, ${already} ya asignada(s)` : '') +
+        (failed ? `, ${failed} fallida(s)` : '');
+      setMessage({ type: failed > 0 && assigned === 0 ? 'error' : 'success', text: summary });
       setSelectedUser('');
-      setSelectedDataset('');
-      loadUsers();
+      setSelectedDatasets([]);
+      await loadUsers();
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Error al asignar dataset' });
     } finally {
@@ -439,14 +456,35 @@ export default function AdminPageSimple() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-black mb-2">Dataset</label>
+                  <label className="block text-sm font-medium text-black mb-2">Datasets</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-black">Selecciona uno o varios (Ctrl/Cmd + clic)</span>
+                    <label className="text-xs text-black inline-flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedDatasets.length > 0 && selectedDatasets.length === datasets.filter(d => d.status === 'active').length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedDatasets(datasets.filter(d => d.status === 'active').map(d => d._id));
+                          } else {
+                            setSelectedDatasets([]);
+                          }
+                        }}
+                      />
+                      <span>Seleccionar todos</span>
+                    </label>
+                  </div>
                   <select
-                    value={selectedDataset}
-                    onChange={(e) => setSelectedDataset(e.target.value)}
+                    multiple
+                    value={selectedDatasets}
+                    onChange={(e) => {
+                      const options = Array.from((e.target as HTMLSelectElement).selectedOptions).map(o => o.value);
+                      setSelectedDatasets(options);
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    size={8}
                     required
                   >
-                    <option value="">Seleccionar dataset</option>
                     {datasets.filter(d => d.status === 'active').map(dataset => (
                       <option key={dataset._id} value={dataset._id}>
                         {dataset.name} ({dataset.category})
