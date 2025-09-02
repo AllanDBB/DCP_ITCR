@@ -61,6 +61,7 @@ export default function AdminPageSimple() {
   const [users, setUsers] = useState<User[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [evaluations, setEvaluations] = useState<any[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   
   // Estados para formularios
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -414,6 +415,22 @@ export default function AdminPageSimple() {
     }
   };
 
+  const handleDeleteDataset = async (dataset: Dataset) => {
+    if (!dataset?._id) return;
+    const ok = confirm(`¿Seguro que deseas eliminar el dataset "${dataset.name}"? Esta acción es permanente.`);
+    if (!ok) return;
+    try {
+      setDeletingId(dataset._id);
+      await apiService.deleteDataset(dataset._id);
+      setMessage({ type: 'success', text: 'Dataset eliminado exitosamente' });
+      await loadDatasets();
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Error al eliminar dataset' });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const handleRemoveAssignment = async (userId: string, datasetId: string) => {
     if (!confirm('¿Seguro que quieres remover esta asignación?')) return;
 
@@ -680,6 +697,7 @@ Fecha: ${new Date(evaluation.createdAt).toLocaleString()}
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Dificultad</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Estado</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Puntos</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -714,6 +732,16 @@ Fecha: ${new Date(evaluation.createdAt).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
                           {dataset.length}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => handleDeleteDataset(dataset)}
+                            disabled={deletingId === dataset._id}
+                            className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Eliminar dataset"
+                          >
+                            {deletingId === dataset._id ? 'Eliminando...' : 'Eliminar'}
+                          </button>
                         </td>
                       </tr>
                     ))}
