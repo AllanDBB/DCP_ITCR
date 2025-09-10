@@ -54,7 +54,7 @@ function ManualEvaluationPage() {
   
   // Estado para la paginación de la gráfica
   const [currentPage, setCurrentPage] = useState(1);
-  const [pointsPerPage, setPointsPerPage] = useState(100);
+  const [pointsPerPage, setPointsPerPage] = useState(200);
   const [totalPages, setTotalPages] = useState(1);
   
   // Estados para el control de escala
@@ -1141,7 +1141,7 @@ function ManualEvaluationPage() {
             </svg>
             
             {/* Instrucciones y estado */}
-            <div className="absolute top-2 right-2 bg-white bg-opacity-95 p-3 rounded-lg text-xs text-gray-700 border shadow-sm">
+            <div className="absolute top-2 right-2 bg-white bg-opacity-95 p-3 rounded-lg text-xs text-gray-700 border shadow-sm pointer-events-none">
               <div className="space-y-1">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -1164,7 +1164,7 @@ function ManualEvaluationPage() {
             
             {/* Indicador de modo activo */}
             {!sinChangePoint && (
-              <div className="absolute bottom-2 left-2 bg-blue-50 bg-opacity-95 p-2 rounded text-xs text-blue-700 border border-blue-200">
+              <div className="absolute bottom-2 left-2 bg-blue-50 bg-opacity-95 p-2 rounded text-xs text-blue-700 border border-blue-200 pointer-events-none">
                 <div className="flex items-center space-x-1">
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />

@@ -50,7 +50,7 @@ export default function ManualEvaluationPage() {
   
   // Estado para la paginación de la gráfica
   const [currentPage, setCurrentPage] = useState(1);
-  const [pointsPerPage, setPointsPerPage] = useState(100);
+  const [pointsPerPage, setPointsPerPage] = useState(200);
   const [totalPages, setTotalPages] = useState(1);
   
   // Estados para el control de escala
