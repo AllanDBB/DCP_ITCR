@@ -133,15 +133,7 @@ const Navbar = () => {
                       Mi perfil
                     </Link>
                     */}
-                    {user?.role === 'user' && (
-                      <Link
-                        href="/evaluador/mis-datasets"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        Mis Datasets Asignados
-                      </Link>
-                    )}
+                    {/* Removed: Link to "Mis Datasets Asignados" in user menu */}
                     {(user?.role === 'admin' || user?.role === 'superadmin') && (
                       <Link
                         href="/admin"
